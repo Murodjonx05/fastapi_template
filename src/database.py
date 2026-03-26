@@ -2,10 +2,12 @@ import datetime
 from pathlib import Path
 from typing import Annotated
 
+from fastapi import Depends
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column
+from typing import AsyncGenerator
 from src.settings import Application as app
 from src.utils.logging import get_logger
 db_logger = get_logger()
@@ -19,6 +21,13 @@ async_session = async_sessionmaker[AsyncSession](
     bind=async_engine,
     expire_on_commit=False,
 )
+
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session() as session:
+        yield session
+
+
+SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 
 async def init_db_once():
     db_logger.info("Initializing database once", extra={"module": "database"})
@@ -48,6 +57,7 @@ datetime_now = Annotated[
     )
 ]
 
+SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 class Base(DeclarativeBase):
     pass
 
