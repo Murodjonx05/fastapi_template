@@ -1,0 +1,13 @@
+# Python cache and environment files
+__pycache__/
+.venv/
+venv/
+env/
+.env
+
+# IDE and tool directories
+.vscode/
+.ruff_cache/
+
+# Data folders
+data/
