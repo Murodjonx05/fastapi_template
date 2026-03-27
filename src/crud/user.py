@@ -26,23 +26,21 @@ def _is_duplicate_username_error(exc: IntegrityError) -> bool:
 
 
 async def create_user(user: UserCreateSchema, session: AsyncSession) -> int:
-    # Оставили только один begin()
-    async with session.begin():
-        try:
-            hashed_password = await hash_password(user.password)
+    try:
+        hashed_password = await hash_password(user.password)
 
-            stmt = insert(User).values(
-                username=user.username,
-                password=hashed_password
-            ).returning(User.id)
+        stmt = insert(User).values(
+            username=user.username,
+            password=hashed_password
+        ).returning(User.id)
 
-            result = await session.execute(stmt)
-            return result.scalar_one()
+        result = await session.execute(stmt)
+        return result.scalar_one()
 
-        except IntegrityError as exc:
-            if _is_duplicate_username_error(exc):
-                raise UserAlreadyExistsError(user.username) from exc
-            raise
+    except IntegrityError as exc:
+        if _is_duplicate_username_error(exc):
+            raise UserAlreadyExistsError(user.username) from exc
+        raise
 
 
 async def authenticate_user(user: UserAuthSchema, session: AsyncSession) -> int:
@@ -60,12 +58,11 @@ async def authenticate_user(user: UserAuthSchema, session: AsyncSession) -> int:
 
     return user_id
 
-async def delete_user(user_id: int, session: AsyncSession) -> None:
-    async with session.begin():
-        stmt = delete(User).where(User.id == user_id)
-        result = await session.execute(stmt)
-        if not result.rowcount:
-            raise UserNotFoundError(user_id)
+async def delete_user(user_id: int, session: AsyncSession) -> None:    
+    stmt = delete(User).where(User.id == user_id)
+    result = await session.execute(stmt)
+    if not result.rowcount:
+        raise UserNotFoundError(user_id)
 
 async def get_user(user_id: int, session: AsyncSession) -> UserResponseSchema:
     user = await session.scalar(
