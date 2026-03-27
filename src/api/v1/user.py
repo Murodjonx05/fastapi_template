@@ -10,9 +10,8 @@ from src.crud.user import (
     delete_user,
     get_user,
 )
-
 from src.database import SessionDep
-from src.schemas.user import UserAuthSchemaForm, UserCreateSchemaForm
+from src.schemas.user import UserAuthSchemaDep, UserCreateSchemaDep
 from src.utils.logging import get_logger
 from src.utils.rate_limiter import limiter
 
@@ -22,7 +21,7 @@ user_router = APIRouter(prefix="/users", tags=["users"])
 
 @user_router.post("/auth")
 @limiter.limit(limit_minute(5))
-async def auth_user(request: Request, user: UserAuthSchemaForm, session: SessionDep):
+async def auth_user(request: Request, user: UserAuthSchemaDep, session: SessionDep):
     try:
         user_id = await authenticate_user(user, session)
         user_logger.info(f"User authenticated: {user.username}")
@@ -36,7 +35,7 @@ async def auth_user(request: Request, user: UserAuthSchemaForm, session: Session
 
 @user_router.post("/", status_code=201)
 @limiter.limit(limit_minute(5))
-async def create_user_endpoint(request: Request, user: UserCreateSchemaForm, session: SessionDep):
+async def create_user_endpoint(request: Request, user: UserCreateSchemaDep, session: SessionDep):
     try:
         user_id = await create_user(user, session)
         user_logger.info(f"User created: {user.username}")
