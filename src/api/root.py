@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 
 from src.core.limiter import limit_minute
-from src.settings import Application as app
+from src.core.settings import Application as app
 from src.utils.profiling import profile
 from src.utils.rate_limiter import limiter
 

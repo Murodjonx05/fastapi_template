@@ -5,7 +5,7 @@ from html import escape
 
 from loguru import logger
 
-from src.settings import Application as app
+from src.core.settings import Application as app
 LEVEL_BG = {
     "TRACE": "#6f42c1",
     "DEBUG": "#0ea5e9",
