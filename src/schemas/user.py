@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Self
 from typing import Annotated
 
@@ -42,6 +43,11 @@ class UserCreateSchema(UserAuthSchema):
         if self.password.get_secret_value() != self.password_confirm.get_secret_value():
             raise ValueError("Passwords do not match")
         return self
+
+
+class UserResponseSchema(BaseSchema):
+    id:int
+    username: Username
 
 UserAuthSchemaForm = Annotated[UserAuthSchema, Form()]
 UserCreateSchemaForm = Annotated[UserCreateSchema, Form()]

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.security import hash_password, verify_password
 # Убрали импорт SessionDep отсюда
 from src.models.user import User
-from src.schemas.user import UserAuthSchema, UserCreateSchema
+from src.schemas.user import UserAuthSchema, UserCreateSchema, UserResponseSchema
 
 class UserAlreadyExistsError(Exception):
     def __init__(self, username: str):
@@ -66,3 +66,11 @@ async def delete_user(user_id: int, session: AsyncSession) -> None:
         result = await session.execute(stmt)
         if not result.rowcount:
             raise UserNotFoundError(user_id)
+
+async def get_user(user_id: int, session: AsyncSession) -> UserResponseSchema:
+    user = await session.scalar(
+        select(User).where(User.id == user_id)
+    )
+    if not user:
+        raise UserNotFoundError(user_id)
+    return UserResponseSchema.model_validate(user)
