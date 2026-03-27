@@ -11,7 +11,7 @@ from src.crud.user import (
 )
 
 from src.database import SessionDep
-from src.schemas.user import UserAuthSchema, UserCreateSchema, UserAuthSchemaForm, UserCreateSchemaForm
+from src.schemas.user import UserAuthSchemaForm, UserCreateSchemaForm
 from src.utils.logging import get_logger
 from src.utils.rate_limiter import limiter
 
