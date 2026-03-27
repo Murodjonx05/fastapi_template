@@ -2,7 +2,7 @@ import asyncio
 from functools import wraps
 from time import perf_counter
 
-from src.core.settings import Application as app
+from src.core.settings import app_settings as app
 from src.utils.logging import get_logger
 
 app_logger = get_logger("PROFILING")

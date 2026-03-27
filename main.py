@@ -1,5 +1,5 @@
 import uvicorn
-from src.core.settings import Application as app
+from src.core.settings import app_settings as app
 from src.utils.logging import color, configure_logging, get_logger
 
 def main():

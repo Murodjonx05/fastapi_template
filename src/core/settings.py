@@ -1,22 +1,54 @@
-import os
+from functools import lru_cache
 from pathlib import Path
 
-from dotenv import load_dotenv
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-base_dir = Path(__file__).resolve().parent.parent.parent
-load_dotenv(base_dir / ".env")
 
-default_db_path = (base_dir / "data" / "database.db").resolve()
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DEFAULT_DB_PATH = (BASE_DIR / "data" / "database.db").resolve()
 
-class Product:
-    title: str = os.getenv("NAME", "FastAPI Application")
-    description: str = os.getenv("DESCRIPTION", "FastAPI Application")
-    version:str = os.getenv("VERSION", "1.0.0")
 
-class Database:
-    database_url: str = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{default_db_path.as_posix()}")
+class ProductSettings(BaseSettings):
+    title: str = Field(default="FastAPI Application", alias="NAME")
+    description: str = Field(default="FastAPI Application", alias="DESCRIPTION")
+    version: str = Field(default="1.0.0", alias="VERSION")
 
-class Application(Product, Database):
-    host: str = os.getenv("HOST", "127.0.0.1")
-    port: int = int(os.getenv("PORT", "8000"))
-    debug_mode: bool = os.getenv("RELOAD", "False").lower() in ("true", "1", "yes")
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+class DatabaseSettings(BaseSettings):
+    database_url: str = Field(
+        default=f"sqlite+aiosqlite:///{DEFAULT_DB_PATH.as_posix()}",
+        alias="DATABASE_URL",
+    )
+
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+class AppSettings(ProductSettings, DatabaseSettings):
+    host: str = Field(default="127.0.0.1", alias="HOST")
+    port: int = Field(default=8000, alias="PORT")
+    debug_mode: bool = Field(default=False, alias="RELOAD")
+
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+@lru_cache
+def get_settings() -> AppSettings:
+    return AppSettings()
+
+
+app_settings = get_settings()
