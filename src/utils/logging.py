@@ -14,7 +14,7 @@ LEVEL_BG = {
     "WARNING": "#d97706",
     "ERROR": "#dc2626",
     "CRITICAL": "#7f1d1d",
-}
+    }
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 SQLALCHEMY_LOG_LEVEL = os.getenv(
     "SQLALCHEMY_LOG_LEVEL",

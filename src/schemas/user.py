@@ -1,6 +1,7 @@
 from typing import Self
 from typing import Annotated
 
+from fastapi import Form
 from pydantic import Field, SecretStr, StringConstraints, model_validator
 
 from src.schemas.base import BaseSchema
@@ -41,3 +42,6 @@ class UserCreateSchema(UserAuthSchema):
         if self.password.get_secret_value() != self.password_confirm.get_secret_value():
             raise ValueError("Passwords do not match")
         return self
+
+UserAuthSchemaForm = Annotated[UserAuthSchema, Form()]
+UserCreateSchemaForm = Annotated[UserCreateSchema, Form()]

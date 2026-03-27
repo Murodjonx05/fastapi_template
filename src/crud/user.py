@@ -1,4 +1,4 @@
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +15,10 @@ class UserAlreadyExistsError(Exception):
 class InvalidCredentialsError(Exception):
     def __init__(self):
         super().__init__("Invalid username or password")
+
+class UserNotFoundError(Exception):
+    def __init__(self, user_id: int):
+        super().__init__(f"User with id {user_id} not found")
 
 
 def _is_duplicate_username_error(exc: IntegrityError) -> bool:
@@ -55,3 +59,10 @@ async def authenticate_user(user: UserAuthSchema, session: AsyncSession) -> int:
         raise InvalidCredentialsError()
 
     return user_id
+
+async def delete_user(user_id: int, session: AsyncSession) -> None:
+    async with session.begin():
+        stmt = delete(User).where(User.id == user_id)
+        result = await session.execute(stmt)
+        if not result.rowcount:
+            raise UserNotFoundError(user_id)
