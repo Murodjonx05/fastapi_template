@@ -3,7 +3,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.security import hash_password, verify_password
-# Убрали импорт SessionDep отсюда
 from src.models.user import User
 from src.schemas.user import UserAuthSchema, UserCreateSchema, UserResponseSchema
 

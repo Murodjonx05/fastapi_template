@@ -88,6 +88,10 @@ def configure_logging(level: str = LOG_LEVEL) -> None:
     handler = InterceptHandler()
     for name in (
         "",
+        "alembic",
+        "alembic.runtime",
+        "alembic.runtime.migration",
+        "alembic.runtime.plugins",
         "uvicorn",
         "uvicorn.error",
         "uvicorn.access",

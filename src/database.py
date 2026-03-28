@@ -1,8 +1,6 @@
 import datetime
-import datetime
 from pathlib import Path
-from typing import Annotated
-from typing import AsyncGenerator
+from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends
 from sqlalchemy import DateTime, String, func
@@ -12,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from src.core.settings import app_settings as app
 from src.utils.logging import get_logger
+
 db_logger = get_logger()
 
 async_engine = create_async_engine(
@@ -45,6 +44,12 @@ async def init_db_once():
     except Exception as e:
         db_logger.error("Error initializing database", extra={"module": "database", "error": str(e)})
         raise
+
+
+def ensure_database_directory() -> None:
+    if app.database_url.startswith("sqlite"):
+        db_path = app.database_url.removeprefix("sqlite+aiosqlite:///")
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
 intpk = Annotated[int, mapped_column(primary_key=True)]
 str255 = Annotated[str, mapped_column(String(255))]
