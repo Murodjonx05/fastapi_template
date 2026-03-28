@@ -28,6 +28,22 @@ def get_existing_tables() -> set[str]:
         engine.dispose()
 
 
+def create_missing_tables() -> None:
+    engine = create_engine(app_settings.sync_database_url)
+    try:
+        existing = get_existing_tables()
+        missing = [t for n, t in Base.metadata.tables.items() if n not in existing]
+        if missing:
+            with engine.begin() as conn:
+                Base.metadata.create_all(conn, tables=missing)
+            app_logger.info(
+                "Missing tables created",
+                extra={"module": "lifespan", "tables": [t.name for t in missing]},
+            )
+    finally:
+        engine.dispose()
+
+
 def has_alembic_revision() -> bool:
     engine = create_engine(app_settings.sync_database_url)
 
@@ -59,6 +75,7 @@ def run_migrations() -> None:
         command.stamp(alembic_config, "head")
 
     command.upgrade(alembic_config, "head")
+    create_missing_tables()
 
 
 @asynccontextmanager
