@@ -48,15 +48,11 @@ intpk = Annotated[int, mapped_column(primary_key=True)]
 str255 = Annotated[str, mapped_column(String(255))]
 str255_nullable = Annotated[str, mapped_column(String(255), nullable=True)]
 str255_unique = Annotated[str, mapped_column(String(255), unique=True)]
-datetime_now = Annotated[
-    datetime.datetime,
-    mapped_column(
-        DateTime,
-        default=datetime.datetime.utcnow,
-        server_default=func.now(),
-        onupdate=datetime.datetime.utcnow,
-    )
-]
+
+common_datetime_kwargs = dict(DateTime, default=datetime.datetime.utcnow, server_default=func.now())
+datetime_now = Annotated[datetime.datetime, mapped_column(**common_datetime_kwargs, onupdate=datetime.datetime.utcnow)]
+updated_at = Annotated[datetime.datetime, mapped_column(**common_datetime_kwargs, onupdate=datetime.datetime.utcnow)]
+created_at = Annotated[datetime.datetime, mapped_column(**common_datetime_kwargs)]
 
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 class Base(DeclarativeBase):
