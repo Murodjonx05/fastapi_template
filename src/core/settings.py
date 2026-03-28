@@ -46,6 +46,8 @@ class AppSettings(ProductSettings, DatabaseSettings):
     host: str = Field(default="127.0.0.1", alias="HOST")
     port: int = Field(default=8000, alias="PORT")
     debug_mode: bool = Field(default=False, alias="RELOAD")
+    trust_proxy_headers: bool = Field(default=False, alias="TRUST_PROXY_HEADERS")
+    forwarded_allow_ips: str = Field(default="127.0.0.1", alias="FORWARDED_ALLOW_IPS")
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",

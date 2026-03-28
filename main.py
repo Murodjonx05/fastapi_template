@@ -8,7 +8,15 @@ def main():
     url = color(f"http://{app.host}:{app.port}", tc='#93c5fd', bc='#000')
     try:
         log.opt(colors=True).success(f"Starting application on {url}", extra={"module": "main"})
-        uvicorn.run("src.app:app", host=app.host, port=app.port, reload=app.debug_mode, log_config=None)
+        uvicorn.run(
+            "src.app:app",
+            host=app.host,
+            port=app.port,
+            reload=app.debug_mode,
+            log_config=None,
+            proxy_headers=app.trust_proxy_headers,
+            forwarded_allow_ips=app.forwarded_allow_ips,
+        )
     except Exception as e:
         log.error("Error starting application", extra={"module": "main", "error": str(e)})
         raise
