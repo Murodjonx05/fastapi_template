@@ -1,13 +1,15 @@
 import datetime
+import datetime
 from pathlib import Path
 from typing import Annotated
+from typing import AsyncGenerator
 
 from fastapi import Depends
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column
-from typing import AsyncGenerator
+
 from src.core.settings import app_settings as app
 from src.utils.logging import get_logger
 db_logger = get_logger()
@@ -49,12 +51,14 @@ str255 = Annotated[str, mapped_column(String(255))]
 str255_nullable = Annotated[str, mapped_column(String(255), nullable=True)]
 str255_unique = Annotated[str, mapped_column(String(255), unique=True)]
 
-common_datetime_kwargs = dict(DateTime, default=datetime.datetime.utcnow, server_default=func.now())
-datetime_now = Annotated[datetime.datetime, mapped_column(**common_datetime_kwargs, onupdate=datetime.datetime.utcnow)]
+
+
+common_datetime_kwargs = dict(type_=DateTime, default=datetime.datetime.utcnow, server_default=func.now())
 updated_at = Annotated[datetime.datetime, mapped_column(**common_datetime_kwargs, onupdate=datetime.datetime.utcnow)]
 created_at = Annotated[datetime.datetime, mapped_column(**common_datetime_kwargs)]
 
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
+
 class Base(DeclarativeBase):
     pass
 
