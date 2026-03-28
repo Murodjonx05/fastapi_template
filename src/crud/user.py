@@ -43,7 +43,6 @@ async def create_user(user: UserCreateSchema, session: AsyncSession) -> int:
 
 
 async def authenticate_user(user: UserAuthSchema, session: AsyncSession) -> int:
-    # Для SELECT можно обойтись без явного begin(), просто выполняем запрос
     stmt = select(User.id, User.password).where(User.username == user.username)
     result = await session.execute(stmt)
     row = result.one_or_none()
