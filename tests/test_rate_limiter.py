@@ -1,7 +1,5 @@
 import pytest
 from httpx import AsyncClient
-from slowapi.errors import RateLimitExceeded
-from src.utils.rate_limiter import _rate_limit_exceeded_handler
 
 @pytest.mark.asyncio
 class TestRateLimiter:

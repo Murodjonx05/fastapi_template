@@ -7,24 +7,31 @@ from src.crud.base import CRUDBase
 from src.models.rbac import Permission
 from src.models.user import User
 from src.core.security import hash_password, verify_password
-
+from src.core.exceptions import AlreadyExistsError, NotFoundError, UnauthorizedError
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
     from src.schemas.user import UserAuthSchema, UserCreateSchema
 
-from src.core.exceptions import AlreadyExistsError, NotFoundError, UnauthorizedError
 
-class UserError(Exception): pass
-class UserAlreadyExistsError(AlreadyExistsError): 
-    def __init__(self): super().__init__("User already exists")
-class UserNotFoundError(NotFoundError): 
-    def __init__(self, identifier: Any): super().__init__(f"User not found: {identifier}")
-class InvalidCredentialsError(UnauthorizedError): 
-    def __init__(self): super().__init__("Invalid credentials")
+class UserError(Exception):
+    pass
+
+class UserAlreadyExistsError(AlreadyExistsError):
+    def __init__(self):
+        super().__init__("User already exists")
+
+class UserNotFoundError(NotFoundError):
+    def __init__(self, identifier: Any):
+        super().__init__(f"User not found: {identifier}")
+
+class InvalidCredentialsError(UnauthorizedError):
+    def __init__(self):
+        super().__init__("Invalid credentials")
 
 class UserCRUD(CRUDBase[User]):
     """Optimized User service with authentication and registration logic."""
-    def __init__(self): super().__init__(User)
+    def __init__(self):
+        super().__init__(User)
 
     async def get_with_permissions(self, session: AsyncSession, user_id: int) -> User:
         stmt = (
@@ -60,9 +67,9 @@ class UserCRUD(CRUDBase[User]):
 
     async def authenticate(self, auth: UserAuthSchema, session: AsyncSession) -> str:
         if not (user := await self.get_by_field(session, username=auth.username)):
-             raise UserNotFoundError(auth.username)
+            raise UserNotFoundError(auth.username)
         if not await verify_password(auth.password, user.password):
-             raise InvalidCredentialsError()
+            raise InvalidCredentialsError()
         return str(user.uuid)
 
     async def create(self, data: UserCreateSchema, session: AsyncSession) -> str:
@@ -71,7 +78,7 @@ class UserCRUD(CRUDBase[User]):
             dump = data.model_dump(exclude={"password", "password_confirm"})
             user = await super().create(session, {**dump, "password": hashed})
             return str(user.uuid)
-        except IntegrityError: 
-            raise UserAlreadyExistsError()
+        except IntegrityError as exc:
+            raise UserAlreadyExistsError() from exc
 
 user_crud = UserCRUD()

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from slowapi.errors import RateLimitExceeded
 
 from src.api import api_router
@@ -10,7 +11,7 @@ from src.utils.rate_limiter import _rate_limit_exceeded_handler, limiter
 
 def create_app() -> FastAPI:
     """FastAPI application factory."""
-    app = FastAPI(
+    _app = FastAPI(
         title=app_settings.title,
         version=app_settings.version,
         lifespan=lifespan,
@@ -18,22 +19,21 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if app_settings.is_docs_enabled else None,
         openapi_url="/openapi.json" if app_settings.is_docs_enabled else None,
     )
-    
-    app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    
-    setup_exception_handlers(app)  # Register global exception handlers
-    
-    app.include_router(api_router)
-    auth.handle_errors(app)
-    
-    @app.get("/", include_in_schema=False)
+
+    _app.state.limiter = limiter
+    _app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    setup_exception_handlers(_app)  # Register global exception handlers
+
+    _app.include_router(api_router)
+    auth.handle_errors(_app)
+
+    @_app.get("/", include_in_schema=False)
     async def root_redirect():
-        from fastapi.responses import RedirectResponse
         if app_settings.is_docs_enabled:
             return RedirectResponse(url="/docs")
         return {"status": "ok"}
-    
-    return app
+
+    return _app
 
 app = create_app()

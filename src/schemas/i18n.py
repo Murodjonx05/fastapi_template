@@ -5,6 +5,7 @@ from fastapi import Depends
 from pydantic import AliasChoices, Field, StringConstraints
 
 from src.core.constants import HUGE_KB, LARGE_KB, MEDIUM_CHARS, SMALL_CHARS
+from src.core.exceptions import AlreadyExistsError, DomainError, NotFoundError, ValidationError
 from src.schemas.base import BaseSchema
 
 TranslationKey = Annotated[
@@ -40,8 +41,6 @@ MAX_VALUE_CHARS: dict["TranslationSize", int] = {
     TranslationSize.HUGE: HUGE_KB * 1024,
 }
 
-
-from src.core.exceptions import AlreadyExistsError, DomainError, NotFoundError, ValidationError
 
 class I18nError(DomainError):
     """Base for i18n domain errors."""

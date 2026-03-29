@@ -1,3 +1,4 @@
+import contextvars
 from typing import Annotated
 from authx import AuthX, AuthXConfig
 from fastapi import Depends, HTTPException, Request, Security
@@ -44,7 +45,6 @@ bearer_scheme = HTTPBearer(
     description="Standard JWT Bearer token."
 )
 
-import contextvars
 # --- AuthX Subject Retrieval ---
 # Use ContextVar for thread/coroutine safe session overrides in tests.
 TEST_SESSION_OVERRIDE: contextvars.ContextVar[AsyncSession | None] = contextvars.ContextVar("test_session", default=None)
@@ -54,7 +54,7 @@ async def _get_user_by_uuid(uid: str) -> User | None:
     stmt = select(User).options(selectinload(User.role), selectinload(User.permissions)).where(User.uuid == uid)
     if (session := TEST_SESSION_OVERRIDE.get()) is not None:
         return await session.scalar(stmt)
-        
+
     async with AsyncSessionMaker() as session:
         return await session.scalar(stmt)
 

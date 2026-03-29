@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, status
 from src.core.security import CurrentUser, create_access_token
 from src.crud.user import UserNotFoundError, user_crud
 from src.database import SessionDep

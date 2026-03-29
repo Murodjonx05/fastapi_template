@@ -25,5 +25,5 @@ class Permission(BasePK, TranslationSmallMixin):
 class Role(BasePK, TranslationSmallMixin):
     __tablename__ = "roles"
     name: Mapped[str] = mapped_column(unique=True)
-    
+
     permissions: Mapped[list[Permission]] = relationship(secondary=role_permissions)

@@ -3,7 +3,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.crud.user import (
     user_crud,
     UserAlreadyExistsError,
-    UserNotFoundError,
     InvalidCredentialsError
 )
 from src.schemas.user import UserAuthSchema, UserCreateSchema

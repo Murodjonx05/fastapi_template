@@ -7,7 +7,7 @@ from typing import Any, TypeVar
 
 from sqlalchemy.exc import OperationalError
 
-from src.lifespan import run_migrations
+from src.lifespan import apply_migrations
 from src.utils.logging import get_logger
 
 _T = TypeVar("_T")
@@ -26,7 +26,7 @@ async def _run_migrations_once() -> None:
             "Missing DB object detected, running migrations and retrying once",
             extra={"module": "db_recovery"},
         )
-        await asyncio.to_thread(run_migrations)
+        await asyncio.to_thread(apply_migrations)
 
 
 def retry_after_migration_on_missing_table(

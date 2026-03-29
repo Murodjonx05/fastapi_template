@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import pytest
-import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.crud.i18n import (

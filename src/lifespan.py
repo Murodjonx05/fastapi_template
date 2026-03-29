@@ -1,6 +1,5 @@
 import asyncio
 from contextlib import asynccontextmanager
-from pathlib import Path
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
@@ -32,12 +31,12 @@ def apply_migrations() -> None:
 async def lifespan(_: FastAPI):
     """FastAPI lifespan manager for startup and shutdown events."""
     logger.info("Application starting up...")
-    
+
     if app_settings.run_migrations_on_startup:
         await asyncio.to_thread(apply_migrations)
-    
+
     yield
-    
+
     logger.info("Application shutting down...")
     await engine.dispose()
     logger.info("Database engine disposed.")

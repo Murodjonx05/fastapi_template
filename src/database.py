@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, MetaData, String, func
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -38,15 +38,14 @@ def _now_py() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc)
 
 timestamp = Annotated[
-    datetime.datetime, 
+    datetime.datetime,
     mapped_column(DateTime(timezone=True), server_default=now_utc, default=_now_py)
 ]
 updated_timestamp = Annotated[
-    datetime.datetime, 
+    datetime.datetime,
     mapped_column(DateTime(timezone=True), server_default=now_utc, default=_now_py, onupdate=_now_py)
 ]
 
-from sqlalchemy import MetaData
 
 naming_convention = {
     "ix": "ix_%(column_0_label)s",
@@ -64,4 +63,3 @@ class BasePK(Base):
     """Base for models with an integer primary key."""
     __abstract__ = True
     id: Mapped[int_pk]
-    

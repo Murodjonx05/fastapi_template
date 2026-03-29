@@ -10,6 +10,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+import src.database
 
 # Pre-load ORM models and core components to avoid "Setup delay" during first test
 from src.database import Base, get_db_session
@@ -50,7 +51,6 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 TestSessionLocal = async_sessionmaker(bind=test_engine, expire_on_commit=False)
 
 # Monkey-patch global database layer for tests
-import src.database
 src.database.AsyncSessionMaker = TestSessionLocal
 src.database.engine = test_engine
 

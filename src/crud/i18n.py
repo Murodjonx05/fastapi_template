@@ -4,8 +4,8 @@ from sqlalchemy.exc import IntegrityError
 from src.crud.base import CRUDBase
 from src.models.i18n import TranslationSmall, TranslationMedium, TranslationLarge, TranslationHuge
 from src.schemas.i18n import (
-    TranslationSize, validate_translation_value, TranslationAlreadyExistsError, 
-    TranslationNotFoundError, TranslationDeleteNotFoundError, TranslationValidationError
+    TranslationSize, validate_translation_value, TranslationAlreadyExistsError,
+    TranslationNotFoundError, TranslationDeleteNotFoundError
 )
 
 if TYPE_CHECKING:
@@ -23,7 +23,8 @@ async def create_translation(data: TranslationCreateSchema, size: TranslationSiz
     validate_translation_value(data.value, size)
     try:
         return await _CRUD_MAP[size].create(session, {"key": data.key, "language_code": data.language_code, "values": data.value})
-    except IntegrityError: raise TranslationAlreadyExistsError(data.key, data.language_code)
+    except IntegrityError as exc:
+        raise TranslationAlreadyExistsError(data.key, data.language_code) from exc
 
 async def get_translation(key: str, lang: str, size: TranslationSize, session: AsyncSession):
     if not (obj := await _CRUD_MAP[size].get_by_field(session, key=key, language_code=lang)):

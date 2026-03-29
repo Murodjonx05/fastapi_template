@@ -20,9 +20,14 @@ def resolve_key(request: Request) -> str:
     return request.client.host if request.client else get_remote_address(request)
 
 # --- Helpers ---
-def limit_minute(x: int) -> str: return f"{x}/minute"
-def limit_hour(x: int) -> str: return f"{x}/hour"
-def limit_day(x: int) -> str: return f"{x}/day"
+def limit_minute(x: int) -> str:
+    return f"{x}/minute"
+
+def limit_hour(x: int) -> str:
+    return f"{x}/hour"
+
+def limit_day(x: int) -> str:
+    return f"{x}/day"
 
 limiter = Limiter(key_func=resolve_key)
 

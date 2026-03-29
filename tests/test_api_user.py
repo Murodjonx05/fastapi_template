@@ -1,7 +1,5 @@
 import pytest
 from httpx import AsyncClient
-from src.core.security import create_access_token
-from src.schemas.user import UserCreateSchema
 
 @pytest.mark.asyncio
 class TestUserAPI:

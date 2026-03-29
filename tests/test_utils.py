@@ -1,7 +1,6 @@
 """Unit tests for utility modules: db_errors, constants, settings."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock
 
 from src.utils.db_errors import (
