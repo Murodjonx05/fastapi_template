@@ -183,10 +183,23 @@ Apply latest migrations:
 alembic upgrade head
 ```
 
-Create a new migration:
+Create a new empty migration:
 
 ```bash
 alembic revision -m "your message"
+```
+
+Create a migration from model changes, Django-style:
+
+```bash
+alembic revision --autogenerate -m "your message"
+```
+
+Convenience commands:
+
+```bash
+make makemigrations MSG="add user role links"
+make migrate
 ```
 
 Rollback one revision:
