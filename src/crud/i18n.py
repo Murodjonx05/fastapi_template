@@ -59,8 +59,7 @@ def _is_duplicate_error(exc: IntegrityError) -> bool:
             message_markers=(
                 "translations_",
                 "uq_translations_",
-                "key1",
-                "key2",
+                "key",
                 "language_code",
             ),
         )
@@ -87,8 +86,7 @@ async def create_translation(
         stmt = (
             insert(model)
             .values(
-                key1=translation.key1,
-                key2=translation.key2,
+                key=translation.key,
                 language_code=translation.language_code,
                 values=translation.value,
             )
@@ -99,35 +97,32 @@ async def create_translation(
     except IntegrityError as exc:
         if _is_duplicate_error(exc):
             raise TranslationAlreadyExistsError(
-                translation.key1,
-                translation.key2,
+                translation.key,
                 translation.language_code,
             ) from exc
         raise
 
     i18n_logger.info(
-        f"Translation created: {created.key1}.{created.key2} {created.language_code}"
+        f"Translation created: {created.key} {created.language_code}"
     )
     return created
 
 
 async def get_translation(
-    key1: str,
-    key2: str,
+    key: str,
     language_code: str,
     size: TranslationSize,
     session: AsyncSession,
 ) -> TranslationModel:
     model = _get_model(size)
     stmt = select(model).where(
-        model.key1 == key1,
-        model.key2 == key2,
+        model.key == key,
         model.language_code == language_code,
     )
     result = await session.execute(stmt)
     translation = result.scalar_one_or_none()
     if translation is None:
-        raise TranslationNotFoundError(key1, key2, language_code)
+        raise TranslationNotFoundError(key, language_code)
     return translation
 
 
@@ -146,7 +141,7 @@ async def get_translations(
     offset = (page - 1) * count
     stmt = (
         select(model)
-        .order_by(model.key1, model.key2, model.language_code)
+        .order_by(model.key, model.language_code)
         .offset(offset)
         .limit(count)
     )

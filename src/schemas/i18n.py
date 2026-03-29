@@ -12,7 +12,7 @@ TranslationKey = Annotated[
 ]
 LanguageCode = Annotated[
     str,
-    StringConstraints(strip_whitespace=True, min_length=2, max_length=3),
+    StringConstraints(strip_whitespace=True, min_length=2, max_length=16),
 ]
 TranslationValue = Annotated[
     str,
@@ -36,16 +36,16 @@ class TranslationValidationError(I18nError):
 
 
 class TranslationAlreadyExistsError(I18nError):
-    def __init__(self, key1: str, key2: str, language_code: str) -> None:
+    def __init__(self, key: str, language_code: str) -> None:
         super().__init__(
-            f"Translation '{key1}.{key2}' for language '{language_code}' already exists"
+            f"Translation '{key}' for language '{language_code}' already exists"
         )
 
 
 class TranslationNotFoundError(I18nError):
-    def __init__(self, key1: str, key2: str, language_code: str) -> None:
+    def __init__(self, key: str, language_code: str) -> None:
         super().__init__(
-            f"Translation '{key1}.{key2}' for language '{language_code}' not found"
+            f"Translation '{key}' for language '{language_code}' not found"
         )
 
 
@@ -57,22 +57,19 @@ class TranslationDeleteNotFoundError(I18nError):
 
 
 class TranslationCreateSchema(BaseSchema):
-    key1: TranslationKey = Field(examples=["home"])
-    key2: TranslationKey = Field(examples=["title"])
+    key: TranslationKey = Field(examples=["home.title"])
     language_code: LanguageCode = Field(examples=["en"])
     value: TranslationValue = Field(examples=["Welcome"])
 
 
 class TranslationGetSchema(BaseSchema):
-    key1: TranslationKey = Field(examples=["home"])
-    key2: TranslationKey = Field(examples=["title"])
+    key: TranslationKey = Field(examples=["home.title"])
     language_code: LanguageCode = Field(examples=["en"])
 
 
 class TranslationResponseSchema(BaseSchema):
     id: int
-    key1: TranslationKey
-    key2: TranslationKey
+    key: TranslationKey
     language_code: LanguageCode
     value: TranslationValue = Field(
         validation_alias=AliasChoices("value", "values"),

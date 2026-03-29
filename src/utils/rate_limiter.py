@@ -37,7 +37,7 @@ def get_client_ip(request: Request) -> str:
 limiter = Limiter(key_func=get_client_ip)
 
 
-def build_rate_limit_response() -> JSONResponse:
+async def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     return JSONResponse(
         status_code=RATE_LIMIT_STATUS_CODE,
         content={
@@ -46,9 +46,5 @@ def build_rate_limit_response() -> JSONResponse:
                 "message": RATE_LIMIT_MESSAGE,
                 "status": RATE_LIMIT_STATUS_CODE,
             }
-        }
+        },
     )
-
-
-async def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
-    return build_rate_limit_response()

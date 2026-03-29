@@ -16,7 +16,7 @@ from src.utils.logging import get_logger
 from src.utils.rate_limiter import limiter
 
 user_logger = get_logger("users_api_endpoint")
-user_router = APIRouter(prefix="/users", tags=["users"])
+user_router = APIRouter(prefix="/user", tags=["user"])
 
 
 @user_router.post("/auth")
@@ -47,7 +47,7 @@ async def create_user_endpoint(request: Request, user: UserCreateSchemaDep, sess
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@user_router.delete("/{user_id}", status_code=204)
+@user_router.delete("", status_code=204)
 @limiter.limit(limit_minute(5))
 async def delete_user_endpoint(request: Request, user_id: int, session: SessionDep):
     try:
@@ -60,7 +60,7 @@ async def delete_user_endpoint(request: Request, user_id: int, session: SessionD
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@user_router.get("/{user_id}")
+@user_router.get("")
 @limiter.limit(limit_minute(5))
 async def get_user_endpoint(request: Request, user_id: int, session: SessionDep):
     try:

@@ -1,7 +1,7 @@
 import asyncio
 from functools import wraps
 from time import sleep
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, TypeVar, cast
 
 from src.utils.logging import get_logger
 
@@ -10,13 +10,31 @@ logger = get_logger("retries")
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def retry(max_retries: int = 3, delay: float = 1.0, step_multiply: float = 1.0) -> Callable[[F], F]:
+def _validate_retry_args(max_retries: int, delay: float, step_multiply: float) -> None:
     if max_retries < 1:
         raise ValueError(f"max_retries must be >= 1, got {max_retries}")
     if delay < 0:
         raise ValueError(f"delay must be >= 0, got {delay}")
     if step_multiply <= 0:
         raise ValueError(f"step_multiply must be > 0, got {step_multiply}")
+
+
+def _log_retry(func_name: str, attempt: int, max_retries: int, current_delay: float, exc: Exception) -> None:
+    logger.warning(
+        f"{func_name} failed on attempt {attempt}/{max_retries}: {exc}. Retrying in {current_delay:.2f}s",
+        extra={"module": "retries"},
+    )
+
+
+def _log_failure(func_name: str, attempt: int, exc: Exception) -> None:
+    logger.error(
+        f"{func_name} failed after {attempt} attempts: {exc}",
+        extra={"module": "retries"},
+    )
+
+
+def retry(max_retries: int = 3, delay: float = 1.0, step_multiply: float = 1.0) -> Callable[[F], F]:
+    _validate_retry_args(max_retries, delay, step_multiply)
 
     def decorator(func: F) -> F:
         if asyncio.iscoroutinefunction(func):
@@ -28,18 +46,13 @@ def retry(max_retries: int = 3, delay: float = 1.0, step_multiply: float = 1.0) 
                         return await func(*args, **kwargs)
                     except Exception as exc:
                         if attempt == max_retries:
-                            logger.error(f"{func.__name__} failed after {attempt} attempts: {exc}",
-                                       extra={"module": "retries"})
+                            _log_failure(func.__name__, attempt, exc)
                             raise
-                        logger.warning(
-                            f"{func.__name__} failed on attempt {attempt}/{max_retries}: {exc}. "
-                            f"Retrying in {current_delay:.2f}s",
-                            extra={"module": "retries"},
-                        )
+                        _log_retry(func.__name__, attempt, max_retries, current_delay, exc)
                         await asyncio.sleep(current_delay)
                         current_delay *= step_multiply
 
-            return async_wrapper  # type: ignore[return-value]
+            return cast(F, async_wrapper)
 
         @wraps(func)
         def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -49,17 +62,12 @@ def retry(max_retries: int = 3, delay: float = 1.0, step_multiply: float = 1.0) 
                     return func(*args, **kwargs)
                 except Exception as exc:
                     if attempt == max_retries:
-                        logger.error(f"{func.__name__} failed after {attempt} attempts: {exc}",
-                                   extra={"module": "retries"})
+                        _log_failure(func.__name__, attempt, exc)
                         raise
-                    logger.warning(
-                        f"{func.__name__} failed on attempt {attempt}/{max_retries}: {exc}. "
-                        f"Retrying in {current_delay:.2f}s",
-                        extra={"module": "retries"},
-                    )
+                    _log_retry(func.__name__, attempt, max_retries, current_delay, exc)
                     sleep(current_delay)
                     current_delay *= step_multiply
 
-        return sync_wrapper
+        return cast(F, sync_wrapper)
 
     return decorator

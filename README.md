@@ -154,6 +154,7 @@ See [.env.example](/home/aestra/Рабочий стол/course_sqlalchemy/.env.e
 
 - `HOST`, `PORT`, `RELOAD`
 - `DATABASE_URL`
+- `DB_REQUIRE_TLS`: keep this `True` for production and remote PostgreSQL deployments so database connections are encrypted
 - `LOG_LEVEL`, `SQLALCHEMY_LOG_LEVEL`, `LOG_ENQUEUE`
 - `NAME`, `DESCRIPTION`, `VERSION`
 

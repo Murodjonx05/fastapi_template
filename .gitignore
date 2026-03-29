@@ -12,3 +12,6 @@ env/
 
 # Data folders
 data/
+
+*.md
+!README.md

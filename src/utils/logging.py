@@ -67,8 +67,8 @@ def color(text: object, tc: str | None = None, bc: str | None = None) -> str:
     return f"{''.join(opening_tags)}{content}{''.join(closing_tags)}"
 
 
-def bg_color(text: object, color: str, foreground: str = "#ffffff") -> str:
-    return color(text, tc=foreground, bc=color)
+def bg_color(text: object, bg: str, foreground: str = "#ffffff") -> str:
+    return color(text, tc=foreground, bc=bg)
 
 def configure_logging(level: str = LOG_LEVEL) -> None:
     global _configured

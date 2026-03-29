@@ -1,6 +1,5 @@
 import asyncio
 from contextlib import asynccontextmanager
-from urllib.parse import urlparse
 
 from alembic import command
 from alembic.config import Config
@@ -10,37 +9,37 @@ from src.core.settings import BASE_DIR, app_settings
 from src.database import ensure_database_directory
 from src.utils.logging import get_logger
 
-app_logger = get_logger()
+_log = get_logger("lifespan")
+_EXTRA = {"module": "lifespan"}
 
 
-def get_alembic_config() -> Config:
-    return Config(str(BASE_DIR / "alembic.ini"))
-
-
-def _sanitize_database_url(db_url: str) -> str:
-    parsed = urlparse(db_url)
-    host = parsed.hostname or "localhost"
-    port = f":{parsed.port}" if parsed.port else ""
-    path = parsed.path or ""
-    return f"{parsed.scheme}://{host}{port}{path}"
+def _sanitize_url(url: str) -> str:
+    if "://" not in url or "@" not in url:
+        return url
+    scheme, rest = url.split("://", 1)
+    _, location = rest.rsplit("@", 1)
+    return f"{scheme}://***@{location}"
 
 
 def run_migrations() -> None:
     ensure_database_directory()
-    alembic_config = get_alembic_config()
-    app_logger.info(
-        "Running Alembic migrations",
-        extra={
-            "module": "lifespan",
-            "database_url": _sanitize_database_url(app_settings.sync_database_url),
-        },
-    )
-    command.upgrade(alembic_config, "head")
+    _log.info("Starting migrations", extra={**_EXTRA, "database_url": _sanitize_url(app_settings.sync_database_url)})
+    try:
+        cfg = Config(str(BASE_DIR / "alembic.ini"))
+        cfg.set_main_option("sqlalchemy.url", app_settings.sync_database_url)
+        command.upgrade(cfg, "head")
+        _log.info("Migrations completed", extra=_EXTRA)
+    except Exception:
+        _log.error("Migrations failed", extra=_EXTRA, exc_info=True)
+        raise
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    app_logger.info("Application startup", extra={"module": "lifespan"})
-    await asyncio.to_thread(run_migrations)
+async def lifespan(_: FastAPI):
+    _log.info("Startup", extra=_EXTRA)
+    if app_settings.run_migrations_on_startup:
+        await asyncio.to_thread(run_migrations)
+    else:
+        _log.warning("Migrations on startup disabled", extra=_EXTRA)
     yield
-    app_logger.info("Application shutdown", extra={"module": "lifespan"})
+    _log.info("Shutdown", extra=_EXTRA)
