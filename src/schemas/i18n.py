@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import Depends
 from pydantic import AliasChoices, Field, StringConstraints
 
+from src.core.constants import HUGE_KB, LARGE_KB, MEDIUM_CHARS, SMALL_CHARS
 from src.schemas.base import BaseSchema
 
 TranslationKey = Annotated[
@@ -25,6 +26,19 @@ class TranslationSize(StrEnum):
     MEDIUM = "medium"
     LARGE = "large"
     HUGE = "huge"
+
+
+# ---------------------------------------------------------------------------
+# Per-size max-length map — single source of truth for value length limits.
+# Used by TranslationCreateSchema.validate_value_length() and in CRUD as a
+# guard.  Changing a limit here automatically propagates everywhere.
+# ---------------------------------------------------------------------------
+MAX_VALUE_CHARS: dict["TranslationSize", int] = {
+    TranslationSize.SMALL: SMALL_CHARS,
+    TranslationSize.MEDIUM: MEDIUM_CHARS,
+    TranslationSize.LARGE: LARGE_KB * 1024,
+    TranslationSize.HUGE: HUGE_KB * 1024,
+}
 
 
 class I18nError(Exception):
@@ -54,6 +68,24 @@ class TranslationDeleteNotFoundError(I18nError):
         super().__init__(
             f"Translation with id '{id}' and size '{size.value}' to delete not found"
         )
+
+
+def validate_translation_value(value: str, size: TranslationSize) -> str:
+    """Validate that *value* fits within the character limit for *size*.
+
+    Raises ``TranslationValidationError`` when the value is too long.
+    This is the **canonical** check — call it from CRUD or API layers to
+    enforce the constraint before touching the database.
+    """
+    max_chars = MAX_VALUE_CHARS.get(size)
+    if max_chars is None:
+        raise TranslationValidationError(f"Unsupported translation size: {size}")
+    if len(value) > max_chars:
+        raise TranslationValidationError(
+            f"Translation value exceeds maximum length of {max_chars} characters "
+            f"for size {size.value}"
+        )
+    return value
 
 
 class TranslationCreateSchema(BaseSchema):

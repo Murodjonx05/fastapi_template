@@ -1,45 +1,42 @@
 import asyncio
 from contextlib import asynccontextmanager
-
+from pathlib import Path
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
 
 from src.core.settings import BASE_DIR, app_settings
-from src.database import ensure_database_directory
 from src.utils.logging import get_logger
 
-_log = get_logger("lifespan")
-_EXTRA = {"module": "lifespan"}
+logger = get_logger("lifespan")
 
+def ensure_sqlite_dir() -> None:
+    """Ensure parent directory exists for SQLite database."""
+    if app_settings.database_url.startswith("sqlite"):
+        db_path = app_settings.database_url.removeprefix("sqlite+aiosqlite:///")
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
-def _sanitize_url(url: str) -> str:
-    if "://" not in url or "@" not in url:
-        return url
-    scheme, rest = url.split("://", 1)
-    _, location = rest.rsplit("@", 1)
-    return f"{scheme}://***@{location}"
-
-
-def run_migrations() -> None:
-    ensure_database_directory()
-    _log.info("Starting migrations", extra={**_EXTRA, "database_url": _sanitize_url(app_settings.sync_database_url)})
+def apply_migrations() -> None:
+    """Run Alembic migrations to upgrade the schema to head."""
+    ensure_sqlite_dir()
+    logger.info("Initializing database migrations...")
     try:
         cfg = Config(str(BASE_DIR / "alembic.ini"))
         cfg.set_main_option("sqlalchemy.url", app_settings.sync_database_url)
         command.upgrade(cfg, "head")
-        _log.info("Migrations completed", extra=_EXTRA)
-    except Exception:
-        _log.error("Migrations failed", extra=_EXTRA, exc_info=True)
+        logger.info("Database schema is up-to-date.")
+    except Exception as exc:
+        logger.error(f"Migration error: {exc}", exc_info=True)
         raise
-
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    _log.info("Startup", extra=_EXTRA)
+    """FastAPI lifespan manager for startup and shutdown events."""
+    logger.info("Application starting up...")
+    
     if app_settings.run_migrations_on_startup:
-        await asyncio.to_thread(run_migrations)
-    else:
-        _log.warning("Migrations on startup disabled", extra=_EXTRA)
+        await asyncio.to_thread(apply_migrations)
+    
     yield
-    _log.info("Shutdown", extra=_EXTRA)
+    
+    logger.info("Application shutting down...")

@@ -59,4 +59,4 @@ pip install -r requirements.txt
 cp .env.example .env
 python main.py
 ```
-back to <a href="../readme.md">README.md</a>
+Back to [README.md](../README.md)

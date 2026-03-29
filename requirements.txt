@@ -13,3 +13,4 @@ pwdlib[argon2]
 pylint
 pytest
 pytest-asyncio
+httpx

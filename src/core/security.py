@@ -1,138 +1,72 @@
-import asyncio
-import hashlib
-import hmac
-import secrets
 from typing import Annotated
-
 from authx import AuthX, AuthXConfig
 from fastapi import Depends, HTTPException, Request, Security
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pwdlib.exceptions import HasherNotAvailable
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pwdlib import PasswordHash
+from pwdlib.exceptions import HasherNotAvailable
 from pydantic import SecretStr
 from sqlalchemy import select
 
 from src.core.settings import app_settings
-from src.database import get_db_session
+from src.database import AsyncSessionMaker
 from src.models.user import User
 
-ITERATIONS = 100_000
-SALT_SIZE = 16
+# --- Password Hashing ---
 try:
     PASSWORD_HASHER = PasswordHash.recommended()
 except HasherNotAvailable as exc:
-    raise RuntimeError(
-        "Argon2 backend is not installed. Install dependencies from requirements.txt "
-        "or run: pip install 'pwdlib[argon2]'"
-    ) from exc
-
-
-def _build_password_hash(password: SecretStr) -> str:
-    salt = secrets.token_hex(SALT_SIZE)
-    password_hash = hashlib.pbkdf2_hmac(
-        "sha256",
-        password.get_secret_value().encode("utf-8"),
-        bytes.fromhex(salt),
-        ITERATIONS,
-    ).hex()
-    return f"{salt}${password_hash}"
-
+    raise RuntimeError("Password hasher (Argon2) is not available. Install 'pwdlib[argon2]'.") from exc
 
 async def hash_password(password: SecretStr) -> str:
-    return await asyncio.to_thread(
-        PASSWORD_HASHER.hash,
-        password.get_secret_value(),
-    )
+    """Hash a password using the recommended algorithm."""
+    return PASSWORD_HASHER.hash(password.get_secret_value())
 
+async def verify_password(password: SecretStr, hashed: str) -> bool:
+    """Verify a password against its hash."""
+    return PASSWORD_HASHER.verify(password.get_secret_value(), hashed)
 
-def _verify_password_hash(password: SecretStr, password_hash: str) -> bool:
-    try:
-        salt, expected_hash = password_hash.split("$", maxsplit=1)
-    except ValueError:
-        return False
-    try:
-        salt_bytes = bytes.fromhex(salt)
-    except ValueError:
-        return False
+async def verify_and_update_password(password: SecretStr, hashed: str) -> tuple[bool, str | None]:
+    """Verify and update the password hash if recommended."""
+    is_valid, updated_hash = PASSWORD_HASHER.verify_and_update(password.get_secret_value(), hashed)
+    return is_valid, updated_hash
 
-    actual_hash = hashlib.pbkdf2_hmac(
-        "sha256",
-        password.get_secret_value().encode("utf-8"),
-        salt_bytes,
-        ITERATIONS,
-    ).hex()
-    return hmac.compare_digest(actual_hash, expected_hash)
-
-
-async def verify_password(password: SecretStr, password_hash: str) -> bool:
-    if password_hash.startswith("$argon2id$"):
-        return await asyncio.to_thread(
-            PASSWORD_HASHER.verify,
-            password.get_secret_value(),
-            password_hash,
-        )
-    return await asyncio.to_thread(_verify_password_hash, password, password_hash)
-
-
-async def verify_and_update_password(password: SecretStr, password_hash: str) -> tuple[bool, str | None]:
-    if password_hash.startswith("$argon2id$"):
-        is_valid = await asyncio.to_thread(
-            PASSWORD_HASHER.verify,
-            password.get_secret_value(),
-            password_hash,
-        )
-        if not is_valid:
-            return False, None
-        updated_hash = await asyncio.to_thread(
-            PASSWORD_HASHER.verify_and_update,
-            password.get_secret_value(),
-            password_hash,
-        )
-        return True, updated_hash[1]
-
-    is_valid = await asyncio.to_thread(_verify_password_hash, password, password_hash)
-    if not is_valid:
-        return False, None
-    return True, await hash_password(password)
-
-
+# --- AuthX Configuration ---
 config = AuthXConfig(
     JWT_SECRET_KEY=app_settings.effective_jwt_secret_key,
     JWT_TOKEN_LOCATION=["headers"],
 )
 auth = AuthX(config=config, model=User)
+
 bearer_scheme = HTTPBearer(
     bearerFormat="JWT",
-    scheme_name="MainToken",
-    description="Main token header. Use: Bearer <access_token>",
+    scheme_name="BearerToken",
+    description="Standard JWT Bearer token."
 )
 
-
-async def _get_user_by_token_subject(uid: str) -> User | None:
-    async for session in get_db_session():
+async def _get_user_by_uuid(uid: str) -> User | None:
+    """Internal helper for AuthX to retrieve a user by their UUID."""
+    async with AsyncSessionMaker() as session:
         return await session.scalar(select(User).where(User.uuid == uid))
-    return None
 
+auth.set_subject_getter(_get_user_by_uuid)
 
-auth.set_subject_getter(_get_user_by_token_subject)
-
-
-def create_access_token(user_uuid: str) -> str:
-    return auth.create_access_token(uid=user_uuid)
-
-
+# --- Dependencies ---
 async def get_current_user(request: Request) -> User:
+    """FastAPI dependency to get the current authenticated user."""
     user = await auth.get_current_subject(request)
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
     return user
-
 
 async def get_current_user_with_token(
     request: Request,
     _: HTTPAuthorizationCredentials = Security(bearer_scheme),
 ) -> User:
+    """Wrapper to include the Bearer scheme in OpenAPI."""
     return await get_current_user(request)
 
+CurrentUser = Annotated[User, Depends(get_current_user_with_token)]
 
-CurrentUserDep = Annotated[User, Depends(get_current_user_with_token)]
+def create_access_token(user_uuid: str) -> str:
+    """Create a new JWT access token for the given user UUID."""
+    return auth.create_access_token(uid=user_uuid)

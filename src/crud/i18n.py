@@ -6,7 +6,6 @@ from sqlalchemy import delete, insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.constants import HUGE_KB, LARGE_KB, MEDIUM_CHARS, SMALL_CHARS
 from src.models.i18n import (
     TranslationHuge,
     TranslationLarge,
@@ -20,6 +19,7 @@ from src.schemas.i18n import (
     TranslationNotFoundError,
     TranslationSize,
     TranslationValidationError,
+    validate_translation_value,
 )
 from src.utils.db_errors import ConstraintViolationKind, get_constraint_violation_kind
 from src.utils.logging import get_logger
@@ -35,13 +35,6 @@ TRANSLATION_MODEL_MAP: dict[TranslationSize, type[TranslationModel]] = {
     TranslationSize.MEDIUM: TranslationMedium,
     TranslationSize.LARGE: TranslationLarge,
     TranslationSize.HUGE: TranslationHuge,
-}
-
-_MAX_VALUE_CHARS: dict[TranslationSize, int] = {
-    TranslationSize.SMALL: SMALL_CHARS,
-    TranslationSize.MEDIUM: MEDIUM_CHARS,
-    TranslationSize.LARGE: LARGE_KB * 1024,
-    TranslationSize.HUGE: HUGE_KB * 1024,
 }
 
 
@@ -73,14 +66,8 @@ async def create_translation(
     session: AsyncSession,
 ) -> TranslationModel:
     model = _get_model(size)
-    max_chars = _MAX_VALUE_CHARS.get(size)
-    if max_chars is None:
-        raise TranslationValidationError(f"Unsupported translation size limit: {size}")
-    if len(translation.value) > max_chars:
-        raise TranslationValidationError(
-            f"Translation value exceeds maximum length of {max_chars} characters "
-            f"for size {size.value}"
-        )
+    # Centralised length check — raises TranslationValidationError on failure.
+    validate_translation_value(translation.value, size)
 
     try:
         stmt = (

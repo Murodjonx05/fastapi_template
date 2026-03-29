@@ -2,7 +2,7 @@
 
 Minimal FastAPI starter with SQLAlchemy, SQLite, SlowAPI, and custom Loguru logging.
 
-Detailed runtime steps: [runtime.md](/home/aestra/Рабочий стол/course_sqlalchemy/runtime.md)
+Detailed runtime steps: [runtime.md](./docs/runtime.md)
 
 ## Quick Start
 
@@ -150,7 +150,7 @@ Default app URL: `http://127.0.0.1:8000`
 
 ## Environment
 
-See [.env.example](/home/aestra/Рабочий стол/course_sqlalchemy/.env.example).
+See [.env.example](./.env.example).
 
 - `HOST`, `PORT`, `RELOAD`
 - `DATABASE_URL`
