@@ -5,7 +5,7 @@ import secrets
 from typing import Annotated
 
 from authx import AuthX, AuthXConfig
-from fastapi import Depends, HTTPException, Request, Security, status
+from fastapi import Depends, HTTPException, Request, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pwdlib.exceptions import HasherNotAvailable
 from pwdlib import PasswordHash
@@ -15,7 +15,6 @@ from sqlalchemy import select
 from src.core.settings import app_settings
 from src.database import get_db_session
 from src.models.user import User
-from src.services.rbac import has_permission, load_user_for_permissions
 
 ITERATIONS = 100_000
 SALT_SIZE = 16
@@ -136,21 +135,4 @@ async def get_current_user_with_token(
     return await get_current_user(request)
 
 
-async def _load_current_user_permissions(user_id: int) -> User | None:
-    async for session in get_db_session():
-        return await load_user_for_permissions(user_id, session)
-    return None
-
-
-async def require_rbac_admin(current_user: User = Depends(get_current_user_with_token)) -> User:
-    user_with_permissions = await _load_current_user_permissions(current_user.id)
-    if user_with_permissions is None or not has_permission(user_with_permissions, "role.superadmin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="RBAC admin access required",
-        )
-    return current_user
-
-
 CurrentUserDep = Annotated[User, Depends(get_current_user_with_token)]
-RbacAdminDep = Annotated[User, Depends(require_rbac_admin)]

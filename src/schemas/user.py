@@ -2,7 +2,6 @@ from typing import Self, Annotated
 from fastapi import Depends
 from pydantic import Field, SecretStr, StringConstraints, model_validator
 
-from src.schemas.rbac import UserPermissionOverrideSchema
 from src.schemas.base import BaseSchema
 
 Username = Annotated[
@@ -31,8 +30,6 @@ class UserCreateSchema(UserAuthSchema):
 class UserResponseSchema(BaseSchema):
     uuid: str
     username: Username
-    role_id: int | None = None
-    permission_overrides: list[UserPermissionOverrideSchema] = Field(default_factory=list)
 
 
 class UserTokenSchema(BaseSchema):
