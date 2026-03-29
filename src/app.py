@@ -27,6 +27,11 @@ def create_app() -> FastAPI:
     app.include_router(api_router)
     auth.handle_errors(app)
     
+    @app.get("/", include_in_schema=False)
+    async def root_redirect():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/docs")
+    
     return app
 
 app = create_app()
