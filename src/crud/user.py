@@ -12,11 +12,15 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
     from src.schemas.user import UserAuthSchema, UserCreateSchema
 
+from src.core.exceptions import AlreadyExistsError, NotFoundError, UnauthorizedError
+
 class UserError(Exception): pass
-class UserAlreadyExistsError(UserError): pass
-class UserNotFoundError(UserError): 
+class UserAlreadyExistsError(AlreadyExistsError): 
+    def __init__(self): super().__init__("User already exists")
+class UserNotFoundError(NotFoundError): 
     def __init__(self, identifier: Any): super().__init__(f"User not found: {identifier}")
-class InvalidCredentialsError(UserError): pass
+class InvalidCredentialsError(UnauthorizedError): 
+    def __init__(self): super().__init__("Invalid credentials")
 
 class UserCRUD(CRUDBase[User]):
     """Optimized User service with authentication and registration logic."""

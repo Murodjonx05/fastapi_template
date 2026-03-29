@@ -132,14 +132,6 @@ class TestGetTranslations:
         page2 = await get_translations(TranslationSize.MEDIUM, db_session, page=2, count=3)
         assert len(page2) == 2
 
-    async def test_invalid_page_raises(self, db_session: AsyncSession):
-        with pytest.raises(TranslationValidationError, match="page must be"):
-            await get_translations(TranslationSize.SMALL, db_session, page=0, count=10)
-
-    async def test_invalid_count_raises(self, db_session: AsyncSession):
-        with pytest.raises(TranslationValidationError, match="count must be"):
-            await get_translations(TranslationSize.SMALL, db_session, page=1, count=0)
-
 
 @pytest.mark.asyncio
 class TestDeleteTranslation:

@@ -41,29 +41,29 @@ MAX_VALUE_CHARS: dict["TranslationSize", int] = {
 }
 
 
-class I18nError(Exception):
+from src.core.exceptions import AlreadyExistsError, DomainError, NotFoundError, ValidationError
+
+class I18nError(DomainError):
     """Base for i18n domain errors."""
 
-
-class TranslationValidationError(I18nError):
+class TranslationValidationError(ValidationError):
     """Invalid pagination, value length, or size."""
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
-
-class TranslationAlreadyExistsError(I18nError):
+class TranslationAlreadyExistsError(AlreadyExistsError):
     def __init__(self, key: str, language_code: str) -> None:
         super().__init__(
             f"Translation '{key}' for language '{language_code}' already exists"
         )
 
-
-class TranslationNotFoundError(I18nError):
+class TranslationNotFoundError(NotFoundError):
     def __init__(self, key: str, language_code: str) -> None:
         super().__init__(
             f"Translation '{key}' for language '{language_code}' not found"
         )
 
-
-class TranslationDeleteNotFoundError(I18nError):
+class TranslationDeleteNotFoundError(NotFoundError):
     def __init__(self, id: int, size: TranslationSize) -> None:
         super().__init__(
             f"Translation with id '{id}' and size '{size.value}' to delete not found"

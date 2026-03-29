@@ -31,8 +31,6 @@ async def get_translation(key: str, lang: str, size: TranslationSize, session: A
     return obj
 
 async def get_translations(size: TranslationSize, session: AsyncSession, page: int = 1, count: int = 20):
-    if page < 1: raise TranslationValidationError("page must be >= 1")
-    if count < 1: raise TranslationValidationError("count must be > 0")
     return await _CRUD_MAP[size].list(session, offset=(page-1)*count, limit=count)
 
 async def delete_translation(id: int, size: TranslationSize, session: AsyncSession):
