@@ -53,7 +53,7 @@ str255_unique   = Annotated[str, mapped_column(String(255), unique=True)]
 def _now() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc)
 
-_dt = dict(type_=DateTime(timezone=True), server_default=func.now())
+_dt = {"type_": DateTime(timezone=True), "server_default": func.now()}
 
 created_at = Annotated[datetime.datetime, mapped_column(**_dt, default=_now)]
 updated_at = Annotated[datetime.datetime, mapped_column(**_dt, default=_now, onupdate=_now)]

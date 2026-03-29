@@ -1,4 +1,6 @@
+from functools import lru_cache
 from pathlib import Path
+import secrets
 from urllib.parse import parse_qs, urlparse
 
 from pydantic import Field, ValidationInfo, field_validator
@@ -14,6 +16,10 @@ MODEL_CONFIG = SettingsConfigDict(
     env_file_encoding="utf-8",
     extra="ignore",
 )
+
+@lru_cache(maxsize=1)
+def _get_dev_jwt_secret_key() -> str:
+    return secrets.token_urlsafe(32)
 
 
 class AppSettings(BaseSettings):
@@ -34,6 +40,8 @@ class AppSettings(BaseSettings):
     debug_mode: bool = Field(default=False, alias="RELOAD")
     trust_proxy_headers: bool = Field(default=False, alias="TRUST_PROXY_HEADERS")
     forwarded_allow_ips: str = Field(default="127.0.0.1", alias="FORWARDED_ALLOW_IPS")
+    docs_enabled: bool | None = Field(default=None, alias="DOCS_ENABLED")
+    jwt_secret_key: str | None = Field(default=None, alias="JWT_SECRET_KEY")
     model_config = MODEL_CONFIG
 
     @field_validator("database_url")
@@ -62,5 +70,28 @@ class AppSettings(BaseSettings):
             .replace("sqlite+aiosqlite:///", "sqlite:///", 1)
             .replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
         )
+
+    @field_validator("jwt_secret_key")
+    @classmethod
+    def validate_jwt_secret_key(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if len(value) < 32 or value.lower() in {"change-me", "your-secret-key", "secret", "password"}:
+            raise ValueError("JWT_SECRET_KEY must be set to a strong random value with at least 32 characters")
+        return value
+
+    @property
+    def effective_jwt_secret_key(self) -> str:
+        if self.jwt_secret_key:
+            return self.jwt_secret_key
+        if self.debug_mode:
+            return _get_dev_jwt_secret_key()
+        raise ValueError("JWT_SECRET_KEY must be configured when RELOAD is false")
+
+    @property
+    def is_docs_enabled(self) -> bool:
+        if self.docs_enabled is not None:
+            return self.docs_enabled
+        return self.debug_mode
 
 app_settings = AppSettings()

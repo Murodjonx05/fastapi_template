@@ -1,9 +1,13 @@
 from sqlalchemy import delete, insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from src.core.security import hash_password, verify_password
+from src.core.security import hash_password, verify_and_update_password
+from src.models.rbac import Role, UserPermissionOverride
 from src.models.user import User
+from src.schemas.rbac import UserPermissionOverrideSchema
+from src.services.rbac import STUDENT
 from src.schemas.user import UserAuthSchema, UserCreateSchema, UserResponseSchema
 from src.utils.db_errors import ConstraintViolationKind, get_constraint_violation_kind
 
@@ -31,14 +35,18 @@ def _is_duplicate_username_error(exc: IntegrityError) -> bool:
     )
 
 
-async def create_user(user: UserCreateSchema, session: AsyncSession) -> int:
+async def create_user(user: UserCreateSchema, session: AsyncSession) -> str:
     try:
         hashed_password = await hash_password(user.password)
+        default_role = await session.scalar(select(Role).where(Role.name == STUDENT.name))
+        if default_role is None:
+            raise ValueError("Default STUDENT role is not created")
 
         stmt = insert(User).values(
             username=user.username,
-            password=hashed_password
-        ).returning(User.id)
+            password=hashed_password,
+            role_id=default_role.id,
+        ).returning(User.uuid)
 
         result = await session.execute(stmt)
         return result.scalar_one()
@@ -49,21 +57,25 @@ async def create_user(user: UserCreateSchema, session: AsyncSession) -> int:
         raise
 
 
-async def authenticate_user(user: UserAuthSchema, session: AsyncSession) -> int:
-    stmt = select(User.id, User.password).where(User.username == user.username)
-    result = await session.execute(stmt)
-    row = result.one_or_none()
+async def authenticate_user(user: UserAuthSchema, session: AsyncSession) -> str:
+    db_user = await session.scalar(
+        select(User).where(User.username == user.username)
+    )
 
-    if row is None:
+    if db_user is None:
         raise InvalidCredentialsError()
 
-    user_id, password_hash = row
-    if not await verify_password(user.password, password_hash):
+    is_valid, updated_hash = await verify_and_update_password(user.password, db_user.password)
+    if not is_valid:
         raise InvalidCredentialsError()
 
-    return user_id
+    if updated_hash is not None and updated_hash != db_user.password:
+        db_user.password = updated_hash
+        await session.flush()
 
-async def delete_user(user_id: int, session: AsyncSession) -> None:    
+    return db_user.uuid
+
+async def delete_user(user_id: int, session: AsyncSession) -> None:
     stmt = delete(User).where(User.id == user_id)
     result = await session.execute(stmt)
     if not result.rowcount:
@@ -71,8 +83,29 @@ async def delete_user(user_id: int, session: AsyncSession) -> None:
 
 async def get_user(user_id: int, session: AsyncSession) -> UserResponseSchema:
     user = await session.scalar(
-        select(User).where(User.id == user_id)
+        select(User)
+        .options(
+            selectinload(User.permission_overrides).selectinload(UserPermissionOverride.permission),
+        )
+        .where(User.id == user_id)
     )
     if not user:
         raise UserNotFoundError(user_id)
-    return UserResponseSchema.model_validate(user)
+    return UserResponseSchema.model_validate(
+        {
+            "uuid": user.uuid,
+            "username": user.username,
+            "role_id": user.role_id,
+            "permission_overrides": [
+                UserPermissionOverrideSchema.model_validate(
+                    {
+                        "id": override.id,
+                        "user_id": override.user_id,
+                        "permission_id": override.permission_id,
+                        "allowed": override.allowed,
+                    }
+                )
+                for override in user.permission_overrides
+            ],
+        }
+    )

@@ -20,7 +20,7 @@ from src.utils.logging import get_logger
 from src.utils.rate_limiter import limiter
 
 i18n_logger = get_logger("i18n_api_endpoint")
-i18n_router = APIRouter(prefix="/i18n")
+i18n_closed_router = APIRouter(prefix="/i18n")
 
 
 def _to_http_error(exc: Exception) -> HTTPException:
@@ -102,7 +102,7 @@ def _register_size_router(prefix: str, tag: str, size: TranslationSize) -> None:
     async def delete_translation_item(request: Request, translation_id: int, session: SessionDep):
         await _delete(size, translation_id, session)
 
-    i18n_router.include_router(router)
+    i18n_closed_router.include_router(router)
 
 
 for _prefix, _tag, _size in (
