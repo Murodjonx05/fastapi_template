@@ -2,73 +2,97 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+# Pre-load ORM models and core components to avoid "Setup delay" during first test
 from src.database import Base, get_db_session
+from src.app import create_app
+import src.models.user  # noqa: F401
+import src.models.i18n  # noqa: F401
+import src.models.rbac  # noqa: F401
+import src.core.security
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
 
-# ---------------------------------------------------------------------------
-# In-memory async engine (no files on disk, fast, isolated per test session)
-# ---------------------------------------------------------------------------
+# --- Performance Optimizations ---
+
+# 1. Fast Hashing for Tests
+src.core.security.PASSWORD_HASHER = PasswordHash((
+    Argon2Hasher(time_cost=1, memory_cost=512, parallelism=1),
+))
+
+# 2. Silent Logs for maximum throughput
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+# 3. Optimized SQLite Engine
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+test_engine = create_async_engine(
+    TEST_DATABASE_URL, 
+    echo=False,
+    connect_args={"check_same_thread": False},
+)
 
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+@event.listens_for(test_engine.sync_engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA synchronous = OFF")
+    cursor.execute("PRAGMA journal_mode = MEMORY")
+    cursor.close()
+
 TestSessionLocal = async_sessionmaker(bind=test_engine, expire_on_commit=False)
 
+# Monkey-patch global database layer for tests
+import src.database
+src.database.AsyncSessionMaker = TestSessionLocal
+src.database.engine = test_engine
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
+# --- Fixtures ---
 
 @pytest.fixture(scope="session")
 def event_loop():
-    """Create a single event loop for the whole test session."""
-    loop = asyncio.new_event_loop()
+    loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
-
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_database():
-    """Create all tables once before the test session starts."""
-    # Import all models so Base.metadata is populated
-    import src.models.user   # noqa: F401
-    import src.models.i18n   # noqa: F401
-    import src.models.rbac   # noqa: F401
-
+    """Session-scoped database initialization."""
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
-
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Provide a transactional session that rolls back after every test."""
+    """Function-scoped transactional session."""
     async with TestSessionLocal() as session:
         async with session.begin():
             yield session
-            # Roll back so every test starts with a clean slate
             await session.rollback()
 
+@pytest.fixture(scope="session")
+def app():
+    """Cached FastAPI app instance."""
+    return create_app()
 
 @pytest_asyncio.fixture
-async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """FastAPI test client wired to the test database session."""
-    from src.app import app                     # lazy import to avoid early engine creation
-
-    async def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db_session] = override_get_db
+async def client(app, db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    """Optimized test client."""
+    app.dependency_overrides[get_db_session] = lambda: db_session
+    src.core.security.TEST_SESSION_OVERRIDE = db_session
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
+    src.core.security.TEST_SESSION_OVERRIDE = None
     app.dependency_overrides.clear()

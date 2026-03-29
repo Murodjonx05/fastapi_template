@@ -6,7 +6,7 @@ from pwdlib import PasswordHash
 from pwdlib.exceptions import HasherNotAvailable
 from pydantic import SecretStr
 from sqlalchemy import select
-
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.settings import app_settings
 from src.database import AsyncSessionMaker
 from src.models.user import User
@@ -43,8 +43,16 @@ bearer_scheme = HTTPBearer(
     description="Standard JWT Bearer token."
 )
 
+# --- AuthX Subject Retrieval ---
+# In production, we use a fresh session. In tests, we can override this
+# to use the same transactional session as the rest of the test.
+TEST_SESSION_OVERRIDE: AsyncSession | None = None
+
 async def _get_user_by_uuid(uid: str) -> User | None:
     """Internal helper for AuthX to retrieve a user by their UUID."""
+    if TEST_SESSION_OVERRIDE:
+        return await TEST_SESSION_OVERRIDE.scalar(select(User).where(User.uuid == uid))
+        
     async with AsyncSessionMaker() as session:
         return await session.scalar(select(User).where(User.uuid == uid))
 

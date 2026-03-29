@@ -4,6 +4,7 @@ from slowapi.errors import RateLimitExceeded
 from src.api import api_router
 from src.core.settings import app_settings
 from src.core.security import auth
+from src.core.exceptions import setup_exception_handlers
 from src.lifespan import lifespan
 from src.utils.rate_limiter import _rate_limit_exceeded_handler, limiter
 
@@ -20,6 +21,8 @@ def create_app() -> FastAPI:
     
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    
+    setup_exception_handlers(app)  # Register global exception handlers
     
     app.include_router(api_router)
     auth.handle_errors(app)

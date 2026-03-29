@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+from pathlib import Path
 from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends
@@ -13,6 +14,13 @@ from src.core.settings import app_settings
 # --- Engine & Session ---
 engine = create_async_engine(app_settings.database_url, echo=False)
 AsyncSessionMaker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+
+
+def ensure_database_directory() -> None:
+    """Ensure the parent directory exists for SQLite database files."""
+    if app_settings.database_url.startswith("sqlite"):
+        db_path = app_settings.database_url.removeprefix("sqlite+aiosqlite:///")
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for providing an async database session."""

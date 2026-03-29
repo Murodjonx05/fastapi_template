@@ -22,8 +22,6 @@ from src.schemas.i18n import (
     validate_translation_value,
 )
 
-pytestmark = pytest.mark.asyncio
-
 
 # ---------------------------------------------------------------------------
 # Schema-level validation (pure, no DB)
@@ -78,6 +76,7 @@ class TestTranslationCreateSchema:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.asyncio
 class TestCreateTranslation:
     async def test_create_and_read_back(self, db_session: AsyncSession):
         schema = TranslationCreateSchema(key="greeting", language_code="en", value="Hello")
@@ -103,6 +102,7 @@ class TestCreateTranslation:
             await create_translation(schema, TranslationSize.SMALL, db_session)
 
 
+@pytest.mark.asyncio
 class TestGetTranslation:
     async def test_get_existing(self, db_session: AsyncSession):
         schema = TranslationCreateSchema(key="get_test", language_code="ru", value="Привет")
@@ -116,6 +116,7 @@ class TestGetTranslation:
             await get_translation("nonexistent", "zz", TranslationSize.SMALL, db_session)
 
 
+@pytest.mark.asyncio
 class TestGetTranslations:
     async def test_pagination(self, db_session: AsyncSession):
         # Create 5 translations
@@ -140,6 +141,7 @@ class TestGetTranslations:
             await get_translations(TranslationSize.SMALL, db_session, page=1, count=0)
 
 
+@pytest.mark.asyncio
 class TestDeleteTranslation:
     async def test_delete_existing(self, db_session: AsyncSession):
         schema = TranslationCreateSchema(key="del_test", language_code="en", value="temp")

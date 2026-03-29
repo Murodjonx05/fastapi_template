@@ -14,7 +14,7 @@ class TestUserAuthSchema:
         assert schema.password.get_secret_value() == "StrongPass123!"
 
     def test_username_too_short(self):
-        with pytest.raises(ValidationError, match="min_length"):
+        with pytest.raises(ValidationError, match="too_short"):
             UserAuthSchema(username="ab", password=SecretStr("StrongPass123!"))
 
     def test_username_too_long(self):
@@ -26,7 +26,7 @@ class TestUserAuthSchema:
             UserAuthSchema(username="john doe!", password=SecretStr("StrongPass123!"))
 
     def test_password_too_short(self):
-        with pytest.raises(ValidationError, match="min_length"):
+        with pytest.raises(ValidationError, match="too_short"):
             UserAuthSchema(username="john_doe", password=SecretStr("short"))
 
     def test_username_strips_whitespace(self):
