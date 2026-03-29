@@ -21,7 +21,7 @@ SQLALCHEMY_LOG_LEVEL = os.getenv(
     "INFO" if app.debug_mode else "WARNING",
 ).upper()
 LOG_ENQUEUE = os.getenv("LOG_ENQUEUE", "false").lower() in ("true", "1", "yes")
-_configured = False
+_STATE = {"configured": False}
 
 
 class InterceptHandler(logging.Handler):
@@ -70,9 +70,11 @@ def color(text: object, tc: str | None = None, bc: str | None = None) -> str:
 def bg_color(text: object, bg: str, foreground: str = "#ffffff") -> str:
     return color(text, tc=foreground, bc=bg)
 
+def _set_configured() -> None:
+    _STATE["configured"] = True
+
 def configure_logging(level: str = LOG_LEVEL) -> None:
-    global _configured
-    if _configured:
+    if _STATE["configured"]:
         return
     logging.root.handlers = []
     logging.root.setLevel(level)
@@ -112,7 +114,7 @@ def configure_logging(level: str = LOG_LEVEL) -> None:
         else:
             log.setLevel(level)
         log.propagate = False
-    _configured = True
+    _set_configured()
 
 def get_logger(name: str = app.title):
     configure_logging()

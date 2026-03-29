@@ -21,11 +21,11 @@ depends_on: Union[str, Sequence[str], None] = None
 def _create_translation_table(table_name: str, value_type: sa.types.TypeEngine) -> None:
     op.create_table(
         table_name,
+        sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("key1", sa.String(length=128), nullable=False),
         sa.Column("key2", sa.String(length=128), nullable=False),
         sa.Column("language_code", sa.String(length=16), nullable=False),
         sa.Column("values", value_type, nullable=False),
-        sa.Column("id", sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
             "key1",

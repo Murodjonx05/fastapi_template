@@ -14,6 +14,83 @@ class ConstraintViolationKind(StrEnum):
     UNKNOWN = "unknown"
 
 
+_POSTGRES_ERROR_CODES = {
+    "23505": ConstraintViolationKind.UNIQUE,
+    "23503": ConstraintViolationKind.FOREIGN_KEY,
+    "23502": ConstraintViolationKind.NOT_NULL,
+    "23514": ConstraintViolationKind.CHECK,
+}
+
+_MYSQL_ERROR_CODES = {
+    1062: ConstraintViolationKind.UNIQUE,
+    1452: ConstraintViolationKind.FOREIGN_KEY,
+    1048: ConstraintViolationKind.NOT_NULL,
+    3819: ConstraintViolationKind.CHECK,
+}
+
+_FALLBACK_MARKERS = (
+    (
+        (
+            "unique constraint failed",
+            "duplicate key value violates unique constraint",
+            "duplicate entry",
+        ),
+        ConstraintViolationKind.UNIQUE,
+    ),
+    (
+        (
+            "foreign key constraint failed",
+            "violates foreign key constraint",
+            "cannot add or update a child row",
+        ),
+        ConstraintViolationKind.FOREIGN_KEY,
+    ),
+    (
+        (
+            "not null constraint failed",
+            "null value in column",
+            "cannot be null",
+        ),
+        ConstraintViolationKind.NOT_NULL,
+    ),
+    (
+        (
+            "check constraint failed",
+            "violates check constraint",
+        ),
+        ConstraintViolationKind.CHECK,
+    ),
+)
+
+
+def _marker_matches(markers: list[str], message: str) -> bool:
+    if len(markers) == 0:
+        return True
+    return any(marker in message for marker in markers)
+
+
+def _match_or_unknown(
+    markers: list[str],
+    kind: ConstraintViolationKind,
+    message: str,
+) -> ConstraintViolationKind:
+    if _marker_matches(markers, message):
+        return kind
+    return ConstraintViolationKind.UNKNOWN
+
+
+def _classify_by_mapping(
+    markers: list[str],
+    code: str | int | None,
+    mapping: dict[str | int, ConstraintViolationKind],
+    message: str,
+) -> ConstraintViolationKind | None:
+    kind = mapping.get(code)
+    if kind is None:
+        return None
+    return _match_or_unknown(markers, kind, message)
+
+
 def get_constraint_violation_kind(
     exc: IntegrityError,
     *,
@@ -22,25 +99,15 @@ def get_constraint_violation_kind(
     """Classify IntegrityError constraint violations across DB backends."""
     markers = [marker.lower() for marker in message_markers]
 
-    def marker_matches(message: str) -> bool:
-        if len(markers) == 0:
-            return True
-        return any(marker in message for marker in markers)
-
     orig = exc.orig
     msg = str(orig) if orig is not None else str(exc)
     msg_lower = msg.lower()
 
     # PostgreSQL SQLSTATE class 23 (integrity constraint violation)
     pg_code = getattr(orig, "pgcode", None) or getattr(orig, "sqlstate", None)
-    if pg_code == "23505":
-        return ConstraintViolationKind.UNIQUE if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
-    if pg_code == "23503":
-        return ConstraintViolationKind.FOREIGN_KEY if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
-    if pg_code == "23502":
-        return ConstraintViolationKind.NOT_NULL if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
-    if pg_code == "23514":
-        return ConstraintViolationKind.CHECK if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
+    pg_kind = _classify_by_mapping(markers, pg_code, _POSTGRES_ERROR_CODES, msg_lower)
+    if pg_kind is not None:
+        return pg_kind
 
     # MySQL
     mysql_code = getattr(orig, "errno", None)
@@ -48,44 +115,13 @@ def get_constraint_violation_kind(
     if mysql_code is None and isinstance(args, (list, tuple)) and args:
         mysql_code = args[0]
 
-    if mysql_code == 1062:
-        return ConstraintViolationKind.UNIQUE if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
-    if mysql_code == 1452:
-        return ConstraintViolationKind.FOREIGN_KEY if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
-    if mysql_code == 1048:
-        return ConstraintViolationKind.NOT_NULL if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
-    if mysql_code == 3819:
-        return ConstraintViolationKind.CHECK if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
+    mysql_kind = _classify_by_mapping(markers, mysql_code, _MYSQL_ERROR_CODES, msg_lower)
+    if mysql_kind is not None:
+        return mysql_kind
 
-    # Text fallbacks (SQLite + generic DBAPI messages)
-    unique_markers = (
-        "unique constraint failed",
-        "duplicate key value violates unique constraint",
-        "duplicate entry",
-    )
-    fk_markers = (
-        "foreign key constraint failed",
-        "violates foreign key constraint",
-        "cannot add or update a child row",
-    )
-    not_null_markers = (
-        "not null constraint failed",
-        "null value in column",
-        "cannot be null",
-    )
-    check_markers = (
-        "check constraint failed",
-        "violates check constraint",
-    )
-
-    if any(marker in msg_lower for marker in unique_markers):
-        return ConstraintViolationKind.UNIQUE if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
-    if any(marker in msg_lower for marker in fk_markers):
-        return ConstraintViolationKind.FOREIGN_KEY if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
-    if any(marker in msg_lower for marker in not_null_markers):
-        return ConstraintViolationKind.NOT_NULL if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
-    if any(marker in msg_lower for marker in check_markers):
-        return ConstraintViolationKind.CHECK if marker_matches(msg_lower) else ConstraintViolationKind.UNKNOWN
+    for marker_group, kind in _FALLBACK_MARKERS:
+        if any(marker in msg_lower for marker in marker_group):
+            return _match_or_unknown(markers, kind, msg_lower)
 
     return ConstraintViolationKind.UNKNOWN
 

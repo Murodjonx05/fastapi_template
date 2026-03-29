@@ -41,7 +41,11 @@ def upgrade() -> None:
 
         unique_names = {u["name"] for u in inspector.get_unique_constraints(table_name)}
         uq_name = f"uq_{table_name}_key_language"
-        with op.batch_alter_table(table_name, recreate="always") as batch_op:
+        with op.batch_alter_table(
+            table_name,
+            recreate="always",
+            partial_reordering=("id", "key", "language_code", "values"),
+        ) as batch_op:
             if uq_name in unique_names:
                 batch_op.drop_constraint(uq_name, type_="unique")
             batch_op.alter_column("key1", new_column_name="key")
@@ -60,7 +64,16 @@ def upgrade() -> None:
         )
 
     for table_name in ("permissions", "roles"):
-        with op.batch_alter_table(table_name, recreate="always") as batch_op:
+        desired_order = (
+            ("id", "name", "title_key", "description_key")
+            if table_name == "permissions"
+            else ("id", "name", "title_key", "description_key", "permissions_id")
+        )
+        with op.batch_alter_table(
+            table_name,
+            recreate="always",
+            partial_reordering=desired_order,
+        ) as batch_op:
             batch_op.alter_column("title_key1", new_column_name="title_key")
             batch_op.drop_column("title_key2")
             batch_op.alter_column("description_key1", new_column_name="description_key")
@@ -72,7 +85,24 @@ def downgrade() -> None:
     inspector = sa.inspect(bind)
 
     for table_name in ("permissions", "roles"):
-        with op.batch_alter_table(table_name, recreate="always") as batch_op:
+        desired_order = (
+            ("id", "name", "title_key1", "title_key2", "description_key1", "description_key2")
+            if table_name == "permissions"
+            else (
+                "id",
+                "name",
+                "title_key1",
+                "title_key2",
+                "description_key1",
+                "description_key2",
+                "permissions_id",
+            )
+        )
+        with op.batch_alter_table(
+            table_name,
+            recreate="always",
+            partial_reordering=desired_order,
+        ) as batch_op:
             batch_op.add_column(
                 sa.Column(
                     "title_key2",
@@ -100,7 +130,11 @@ def downgrade() -> None:
 
         unique_names = {u["name"] for u in inspector.get_unique_constraints(table_name)}
         uq_name = f"uq_{table_name}_key_language"
-        with op.batch_alter_table(table_name, recreate="always") as batch_op:
+        with op.batch_alter_table(
+            table_name,
+            recreate="always",
+            partial_reordering=("id", "key1", "key2", "language_code", "values"),
+        ) as batch_op:
             if uq_name in unique_names:
                 batch_op.drop_constraint(uq_name, type_="unique")
             batch_op.add_column(

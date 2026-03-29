@@ -21,6 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.create_table(
         "users",
+        sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("username", sa.String(length=32), nullable=False),
         sa.Column("password", sa.String(length=128), nullable=False),
         sa.Column(
@@ -35,7 +36,6 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("CURRENT_TIMESTAMP"),
         ),
-        sa.Column("id", sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("username"),
     )

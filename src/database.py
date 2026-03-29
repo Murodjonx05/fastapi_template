@@ -66,5 +66,6 @@ class Base(DeclarativeBase):
     pass
 
 class BasePk(Base):
-    __abstract__ = True
     id: Mapped[intpk]
+    __abstract__ = True
+    
