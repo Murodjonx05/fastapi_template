@@ -14,9 +14,13 @@ logger = get_logger("lifespan")
 def apply_migrations() -> None:
     """Run Alembic migrations to upgrade the schema to head."""
     ensure_database_directory()
+    alembic_ini_path = BASE_DIR / "alembic.ini"
+    if not alembic_ini_path.exists():
+        logger.warning(f"Alembic configuration not found at {alembic_ini_path}. Skipping migrations.")
+        return
     logger.info("Initializing database migrations...")
     try:
-        cfg = Config(str(BASE_DIR / "alembic.ini"))
+        cfg = Config(str(alembic_ini_path))
         cfg.set_main_option("sqlalchemy.url", app_settings.sync_database_url)
         command.upgrade(cfg, "head")
         logger.info("Database schema is up-to-date.")

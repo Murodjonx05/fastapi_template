@@ -7,6 +7,7 @@ from pwdlib.exceptions import HasherNotAvailable
 from pydantic import SecretStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from src.core.settings import app_settings
 from src.database import AsyncSessionMaker
 from src.models.user import User
@@ -50,11 +51,12 @@ TEST_SESSION_OVERRIDE: contextvars.ContextVar[AsyncSession | None] = contextvars
 
 async def _get_user_by_uuid(uid: str) -> User | None:
     """Internal helper for AuthX to retrieve a user by their UUID."""
+    stmt = select(User).options(selectinload(User.role), selectinload(User.permissions)).where(User.uuid == uid)
     if (session := TEST_SESSION_OVERRIDE.get()) is not None:
-        return await session.scalar(select(User).where(User.uuid == uid))
+        return await session.scalar(stmt)
         
     async with AsyncSessionMaker() as session:
-        return await session.scalar(select(User).where(User.uuid == uid))
+        return await session.scalar(stmt)
 
 auth.set_subject_getter(_get_user_by_uuid)
 

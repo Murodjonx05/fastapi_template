@@ -30,7 +30,9 @@ def create_app() -> FastAPI:
     @app.get("/", include_in_schema=False)
     async def root_redirect():
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/docs")
+        if app_settings.is_docs_enabled:
+            return RedirectResponse(url="/docs")
+        return {"status": "ok"}
     
     return app
 
