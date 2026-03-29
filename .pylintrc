@@ -1,0 +1,28 @@
+[MASTER]
+init-hook='import sys; from pathlib import Path; sys.path.insert(0, str(Path.cwd()))'
+
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-few-public-methods,
+    invalid-name,
+    line-too-long,
+    no-self-argument,
+    not-callable,
+    redefined-builtin,
+    missing-final-newline
+
+[TYPECHECK]
+ignored-modules=
+    sqlalchemy,
+    sqlalchemy.orm,
+    sqlalchemy.ext.asyncio,
+    sqlalchemy.ext.mutable,
+    pydantic,
+    pydantic_settings,
+    fastapi
+
+[VARIABLES]
+ignored-argument-names=_.*|^request$

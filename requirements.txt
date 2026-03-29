@@ -2,8 +2,14 @@ aiosqlite
 fastapi[standard]
 loguru
 pydantic
+pydantic-settings
 python-dotenv
 slowapi
 sqlalchemy
 uvicorn
 alembic
+authx
+pwdlib[argon2]
+pylint
+pytest
+pytest-asyncio
