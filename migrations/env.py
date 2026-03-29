@@ -3,9 +3,20 @@ from __future__ import annotations
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+import importlib
+import pkgutil
+import src.models
 from src.core.settings import app_settings
 from src.database import Base, ensure_database_directory
 from src.utils.logging import configure_logging, get_logger
+
+# Best Practice: Dynamically discover and load all modules in src.models
+# to ensure Base.metadata is fully populated for autogenerate.
+def discover_models():
+    for _, name, _ in pkgutil.iter_modules(src.models.__path__, "src.models."):
+        importlib.import_module(name)
+
+discover_models()
 
 config = context.config
 configure_logging()
@@ -25,6 +36,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        render_as_batch=True,
     )
 
     with context.begin_transaction():
@@ -45,6 +57,7 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
+            render_as_batch=True,
         )
 
         with context.begin_transaction():

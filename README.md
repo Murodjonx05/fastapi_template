@@ -2,7 +2,7 @@
 
 Minimal FastAPI starter with SQLAlchemy, SQLite, SlowAPI, and custom Loguru logging.
 
-Detailed runtime steps: [runtime.md](/home/aestra/Рабочий стол/course_sqlalchemy/runtime.md)
+Detailed runtime steps: [runtime.md](./docs/runtime.md)
 
 ## Quick Start
 
@@ -150,7 +150,7 @@ Default app URL: `http://127.0.0.1:8000`
 
 ## Environment
 
-See [.env.example](/home/aestra/Рабочий стол/course_sqlalchemy/.env.example).
+See [.env.example](./.env.example).
 
 - `HOST`, `PORT`, `RELOAD`
 - `DATABASE_URL`
@@ -183,10 +183,23 @@ Apply latest migrations:
 alembic upgrade head
 ```
 
-Create a new migration:
+Create a new empty migration:
 
 ```bash
 alembic revision -m "your message"
+```
+
+Create a migration from model changes, Django-style:
+
+```bash
+alembic revision --autogenerate -m "your message"
+```
+
+Convenience commands:
+
+```bash
+make makemigrations MSG="add user role links"
+make migrate
 ```
 
 Rollback one revision:
