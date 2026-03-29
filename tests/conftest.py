@@ -86,13 +86,21 @@ def app():
 
 @pytest_asyncio.fixture
 async def client(app, db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """Optimized test client."""
+    """Optimized and isolation-safe test client."""
+    from src.utils.rate_limiter import limiter
+    
+    # 1. Thread-safe session override for current task
+    token = src.core.security.TEST_SESSION_OVERRIDE.set(db_session)
     app.dependency_overrides[get_db_session] = lambda: db_session
-    src.core.security.TEST_SESSION_OVERRIDE = db_session
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
-    src.core.security.TEST_SESSION_OVERRIDE = None
+    # 2. Cleanup
     app.dependency_overrides.clear()
+    src.core.security.TEST_SESSION_OVERRIDE.reset(token)
+    
+    # 3. Reset Rate Limiter state to avoid cross-test 429 leakage
+    if hasattr(limiter, "_storage"):
+        limiter._storage.reset()

@@ -6,19 +6,14 @@ from alembic.config import Config
 from fastapi import FastAPI
 
 from src.core.settings import BASE_DIR, app_settings
+from src.database import engine, ensure_database_directory
 from src.utils.logging import get_logger
 
 logger = get_logger("lifespan")
 
-def ensure_sqlite_dir() -> None:
-    """Ensure parent directory exists for SQLite database."""
-    if app_settings.database_url.startswith("sqlite"):
-        db_path = app_settings.database_url.removeprefix("sqlite+aiosqlite:///")
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-
 def apply_migrations() -> None:
     """Run Alembic migrations to upgrade the schema to head."""
-    ensure_sqlite_dir()
+    ensure_database_directory()
     logger.info("Initializing database migrations...")
     try:
         cfg = Config(str(BASE_DIR / "alembic.ini"))
@@ -40,3 +35,5 @@ async def lifespan(_: FastAPI):
     yield
     
     logger.info("Application shutting down...")
+    await engine.dispose()
+    logger.info("Database engine disposed.")

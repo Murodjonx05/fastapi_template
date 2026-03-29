@@ -23,11 +23,9 @@ async def signup(body: UserCreateSchema, session: SessionDep):
     return {"user_uuid": user_uuid}
 
 @user_router.get("/me", response_model=UserResponseSchema)
-async def get_me(current_user: CurrentUser, session: SessionDep):
+async def get_me(current_user: CurrentUser):
     """Fetch profile info of the current user."""
-    user = await user_crud.get(session, current_user.id)
-    if not user: raise UserNotFoundError(f"ID {current_user.id}")
-    return UserResponseSchema.model_validate(user, from_attributes=True)
+    return current_user
 
 @user_router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_me(current_user: CurrentUser, session: SessionDep):
