@@ -18,7 +18,7 @@ class TestUserService:
             password=SecretStr("StrongPass123!"),
             password_confirm=SecretStr("StrongPass123!")
         )
-        user_uuid = await user_crud.create(schema, db_session)
+        user_uuid = await user_crud.create(db_session, schema)
         assert user_uuid
 
         user = await user_crud.get(db_session, 1)
@@ -30,19 +30,19 @@ class TestUserService:
             password=SecretStr("StrongPass123!"),
             password_confirm=SecretStr("StrongPass123!")
         )
-        await user_crud.create(schema, db_session)
+        await user_crud.create(db_session, schema)
         
         with pytest.raises(UserAlreadyExistsError):
-            await user_crud.create(schema, db_session)
+            await user_crud.create(db_session, schema)
 
     async def test_authenticate_user_success(self, db_session: AsyncSession):
         username = "auth_test"
         password = "secret_password"
-        await user_crud.create(UserCreateSchema(
+        await user_crud.create(db_session, UserCreateSchema(
             username=username,
             password=SecretStr(password),
             password_confirm=SecretStr(password)
-        ), db_session)
+        ))
 
         user_uuid = await user_crud.authenticate(UserAuthSchema(
             username=username,
@@ -53,11 +53,11 @@ class TestUserService:
     async def test_authenticate_user_wrong_password_fails(self, db_session: AsyncSession):
         username = "wrong_pass_test"
         password = "correct_password"
-        await user_crud.create(UserCreateSchema(
+        await user_crud.create(db_session, UserCreateSchema(
             username=username,
             password=SecretStr(password),
             password_confirm=SecretStr(password)
-        ), db_session)
+        ))
 
         with pytest.raises(InvalidCredentialsError):
             await user_crud.authenticate(UserAuthSchema(
@@ -66,11 +66,11 @@ class TestUserService:
             ), db_session)
 
     async def test_delete_user_success(self, db_session: AsyncSession):
-        await user_crud.create(UserCreateSchema(
+        await user_crud.create(db_session, UserCreateSchema(
             username="to_delete",
             password=SecretStr("StrongPass123!"),
             password_confirm=SecretStr("StrongPass123!")
-        ), db_session)
+        ))
 
         assert await user_crud.delete(db_session, 1)
         assert await user_crud.get(db_session, 1) is None

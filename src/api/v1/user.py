@@ -18,7 +18,7 @@ async def auth_user(body: UserAuthSchema, session: SessionDep):
 @user_router.post("/", status_code=status.HTTP_201_CREATED)
 async def signup(body: UserCreateSchema, session: SessionDep):
     """Register a new user."""
-    user_uuid = await user_crud.create(body, session)
+    user_uuid = await user_crud.create(session, body)
     logger.info(f"User created: {body.username}")
     return {"user_uuid": user_uuid}
 

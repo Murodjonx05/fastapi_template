@@ -72,7 +72,7 @@ class UserCRUD(CRUDBase[User]):
             raise InvalidCredentialsError()
         return str(user.uuid)
 
-    async def create(self, data: UserCreateSchema, session: AsyncSession) -> str:
+    async def create(self, session: AsyncSession, data: UserCreateSchema) -> str:
         try:
             hashed = await hash_password(data.password)
             dump = data.model_dump(exclude={"password", "password_confirm"})

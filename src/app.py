@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from src.api import api_router
 from src.core.settings import app_settings
@@ -22,6 +23,7 @@ def create_app() -> FastAPI:
 
     _app.state.limiter = limiter
     _app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    _app.add_middleware(SlowAPIMiddleware)
 
     setup_exception_handlers(_app)  # Register global exception handlers
 

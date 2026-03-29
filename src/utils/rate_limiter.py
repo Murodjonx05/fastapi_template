@@ -29,7 +29,7 @@ def limit_hour(x: int) -> str:
 def limit_day(x: int) -> str:
     return f"{x}/day"
 
-limiter = Limiter(key_func=resolve_key)
+limiter = Limiter(key_func=resolve_key, default_limits=["20/second"])
 
 async def _rate_limit_exceeded_handler(request: Request, _: RateLimitExceeded) -> Response:
     """Generic handler for rate limit violations."""
