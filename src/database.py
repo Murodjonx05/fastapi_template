@@ -25,7 +25,12 @@ def ensure_database_directory() -> None:
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for providing an async database session."""
     async with AsyncSessionMaker() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 
