@@ -21,7 +21,7 @@ from src.schemas.i18n import (
     TranslationSize,
     TranslationValidationError,
 )
-from src.utils.db_errors import is_unique_violation
+from src.utils.db_errors import ConstraintViolationKind, get_constraint_violation_kind
 from src.utils.logging import get_logger
 
 i18n_logger = get_logger("i18n_crud")
@@ -53,15 +53,18 @@ def _get_model(size: TranslationSize) -> type[TranslationModel]:
 
 
 def _is_duplicate_error(exc: IntegrityError) -> bool:
-    return is_unique_violation(
-        exc,
-        message_markers=(
-            "translations_",
-            "uq_translations_",
-            "key1",
-            "key2",
-            "language_code",
-        ),
+    return (
+        get_constraint_violation_kind(
+            exc,
+            message_markers=(
+                "translations_",
+                "uq_translations_",
+                "key1",
+                "key2",
+                "language_code",
+            ),
+        )
+        == ConstraintViolationKind.UNIQUE
     )
 
 

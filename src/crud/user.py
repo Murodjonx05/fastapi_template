@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.security import hash_password, verify_password
 from src.models.user import User
 from src.schemas.user import UserAuthSchema, UserCreateSchema, UserResponseSchema
-from src.utils.db_errors import is_unique_violation
+from src.utils.db_errors import ConstraintViolationKind, get_constraint_violation_kind
 
 class UserAlreadyExistsError(Exception):
     def __init__(self, username: str):
@@ -22,9 +22,12 @@ class UserNotFoundError(Exception):
 
 
 def _is_duplicate_username_error(exc: IntegrityError) -> bool:
-    return is_unique_violation(
-        exc,
-        message_markers=("users.username", "uq_users_username"),
+    return (
+        get_constraint_violation_kind(
+            exc,
+            message_markers=("users.username", "uq_users_username"),
+        )
+        == ConstraintViolationKind.UNIQUE
     )
 
 

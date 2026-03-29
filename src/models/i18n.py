@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from sqlalchemy import Index, String, Text, UniqueConstraint
+from sqlalchemy import String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, declarative_mixin, mapped_column
 
 from src.database import BasePk
@@ -27,12 +27,6 @@ class TranslationSmall(BasePk, Translation):
             "language_code",
             name="uq_translations_small_key_language",
         ),
-        Index(
-            "ix_translations_small_lookup",
-            "key1",
-            "key2",
-            "language_code",
-        ),
     )
     values: Mapped[str] = mapped_column(String(SMALL_CHARS), nullable=False)
 
@@ -45,12 +39,6 @@ class TranslationMedium(BasePk, Translation):
             "key2",
             "language_code",
             name="uq_translations_medium_key_language",
-        ),
-        Index(
-            "ix_translations_medium_lookup",
-            "key1",
-            "key2",
-            "language_code",
         ),
     )
     values: Mapped[str] = mapped_column(String(MEDIUM_CHARS), nullable=False)
@@ -65,12 +53,6 @@ class TranslationLarge(BasePk, Translation):
             "language_code",
             name="uq_translations_large_key_language",
         ),
-        Index(
-            "ix_translations_large_lookup",
-            "key1",
-            "key2",
-            "language_code",
-        ),
     )
     values: Mapped[str] = mapped_column(Text, nullable=False)
 
@@ -83,12 +65,6 @@ class TranslationHuge(BasePk, Translation):
             "key2",
             "language_code",
             name="uq_translations_huge_key_language",
-        ),
-        Index(
-            "ix_translations_huge_lookup",
-            "key1",
-            "key2",
-            "language_code",
         ),
     )
     values: Mapped[str] = mapped_column(Text, nullable=False)

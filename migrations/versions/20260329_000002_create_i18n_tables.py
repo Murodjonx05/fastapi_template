@@ -23,7 +23,7 @@ def _create_translation_table(table_name: str, value_type: sa.types.TypeEngine) 
         table_name,
         sa.Column("key1", sa.String(length=128), nullable=False),
         sa.Column("key2", sa.String(length=128), nullable=False),
-        sa.Column("language_code", sa.String(length=3), nullable=False),
+        sa.Column("language_code", sa.String(length=16), nullable=False),
         sa.Column("values", value_type, nullable=False),
         sa.Column("id", sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint("id"),

@@ -2,6 +2,8 @@
 
 Minimal FastAPI starter with SQLAlchemy, SQLite, SlowAPI, and custom Loguru logging.
 
+Detailed runtime steps: [runtime.md](/home/aestra/Рабочий стол/course_sqlalchemy/runtime.md)
+
 ## Quick Start
 
 ### Option 1: Python venv
@@ -199,3 +201,6 @@ main.py
 src/
 data/
 ```
+## How to Run the Project
+
+For step-by-step instructions, see [runtime.md](./docs/runtime.md).
