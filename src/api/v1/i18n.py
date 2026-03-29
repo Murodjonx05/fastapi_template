@@ -105,8 +105,8 @@ async def _delete_i18n_translation(
     except TranslationDeleteNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:
-        i18n_logger.error(f"Unexpected error deleting translation: {exc}")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        i18n_logger.exception(f"Unexpected error deleting translation: {exc}")
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
 @small_i18n_router.get("/", response_model=list[TranslationResponseSchema])

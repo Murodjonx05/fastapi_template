@@ -1,10 +1,11 @@
-from sqlalchemy import insert, select, delete
+from sqlalchemy import delete, insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.security import hash_password, verify_password
 from src.models.user import User
 from src.schemas.user import UserAuthSchema, UserCreateSchema, UserResponseSchema
+from src.utils.db_errors import is_unique_violation
 
 class UserAlreadyExistsError(Exception):
     def __init__(self, username: str):
@@ -21,7 +22,10 @@ class UserNotFoundError(Exception):
 
 
 def _is_duplicate_username_error(exc: IntegrityError) -> bool:
-    return "users.username" in str(exc.orig)
+    return is_unique_violation(
+        exc,
+        message_markers=("users.username", "uq_users_username"),
+    )
 
 
 async def create_user(user: UserCreateSchema, session: AsyncSession) -> int:

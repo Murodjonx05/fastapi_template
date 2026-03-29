@@ -158,10 +158,39 @@ See [.env.example](/home/aestra/Рабочий стол/course_sqlalchemy/.env.e
 ## Includes
 
 - async SQLAlchemy setup
-- automatic SQLite database creation
+- automatic SQLite database directory creation
+- automatic Alembic migration on app startup
 - rate limiting with JSON responses
 - unified custom logging
 - retry and profiling utilities
+
+## Database Migrations (Best Practice)
+
+This project uses **Alembic as the single source of truth** for schema changes.
+The app applies migrations automatically on startup via lifespan hook.
+
+- Startup flow: `alembic upgrade head`
+- No runtime `Base.metadata.create_all(...)` fallback is used.
+
+### Manual migration commands
+
+Apply latest migrations:
+
+```bash
+alembic upgrade head
+```
+
+Create a new migration:
+
+```bash
+alembic revision -m "your message"
+```
+
+Rollback one revision:
+
+```bash
+alembic downgrade -1
+```
 
 ## Structure
 

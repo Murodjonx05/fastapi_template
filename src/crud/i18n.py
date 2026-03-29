@@ -21,6 +21,7 @@ from src.schemas.i18n import (
     TranslationSize,
     TranslationValidationError,
 )
+from src.utils.db_errors import is_unique_violation
 from src.utils.logging import get_logger
 
 i18n_logger = get_logger("i18n_crud")
@@ -52,25 +53,16 @@ def _get_model(size: TranslationSize) -> type[TranslationModel]:
 
 
 def _is_duplicate_error(exc: IntegrityError) -> bool:
-    orig = exc.orig
-    msg = str(orig) if orig is not None else str(exc)
-    if "UNIQUE constraint failed" in msg:
-        return True
-    if orig is not None:
-        if getattr(orig, "pgcode", None) == "23505":
-            return True
-        if getattr(orig, "sqlstate", None) == "23505":
-            return True
-        if getattr(orig, "errno", None) == 1062:
-            return True
-        args = getattr(orig, "args", None)
-        if isinstance(args, (list, tuple)) and args and args[0] == 1062:
-            return True
-    if "duplicate key value violates unique constraint" in msg:
-        return True
-    if "Duplicate entry" in msg:
-        return True
-    return False
+    return is_unique_violation(
+        exc,
+        message_markers=(
+            "translations_",
+            "uq_translations_",
+            "key1",
+            "key2",
+            "language_code",
+        ),
+    )
 
 
 async def create_translation(
