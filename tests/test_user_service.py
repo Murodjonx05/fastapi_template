@@ -1,12 +1,13 @@
 import pytest
+from pydantic import SecretStr
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.crud.user import (
-    user_crud,
+    InvalidCredentialsError,
     UserAlreadyExistsError,
-    InvalidCredentialsError
+    user_crud,
 )
 from src.schemas.user import UserAuthSchema, UserCreateSchema
-from pydantic import SecretStr
 
 @pytest.mark.asyncio
 class TestUserService:
@@ -31,7 +32,7 @@ class TestUserService:
             password_confirm=SecretStr("StrongPass123!")
         )
         await user_crud.create(db_session, schema)
-        
+
         with pytest.raises(UserAlreadyExistsError):
             await user_crud.create(db_session, schema)
 

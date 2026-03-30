@@ -1,17 +1,17 @@
 import pytest
 from httpx import AsyncClient
 
+from src.utils.rate_limiter import limiter
+
 @pytest.mark.asyncio
 class TestRateLimiter:
     """Tests for the rate limiting logic and its integration with FastAPI."""
 
     async def test_global_rate_limit(self, client: AsyncClient):
-        from src.utils.rate_limiter import limiter
-        
         # Manually enable the limiter for this specific test
         limiter.enabled = True
         try:
-            limiter._storage.reset()
+            limiter._storage.reset()  # pylint: disable=protected-access
             # `/api/` has an explicit `5/minute` decorator, which is stricter
             # than the global default limit. The first five requests pass, the
             # sixth immediate request is throttled.

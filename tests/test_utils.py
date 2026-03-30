@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+from sqlalchemy.exc import IntegrityError
+
 from src.utils.db_errors import (
     ConstraintViolationKind,
     get_constraint_violation_kind,
@@ -19,7 +21,6 @@ from src.schemas.i18n import MAX_VALUE_CHARS, TranslationSize
 
 def _make_integrity_error(message: str, *, pgcode=None, errno=None):
     """Build a mock IntegrityError with the desired orig attributes."""
-    from sqlalchemy.exc import IntegrityError
 
     orig = MagicMock()
     orig.__str__ = lambda self: message

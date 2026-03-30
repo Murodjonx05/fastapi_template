@@ -15,7 +15,7 @@ class TestI18nAPI:
 
     async def test_small_variant_lifecycle(self, client: AsyncClient):
         headers = await self._get_auth_headers(client)
-        
+
         # 1. Create translation
         payload = {"key": "dashboard.welcome", "language_code": "en", "value": "Welcome to the dashboard!"}
         create_response = await client.post("/api/v1/i18n/small/", json=payload, headers=headers)
@@ -46,6 +46,6 @@ class TestI18nAPI:
         headers = await self._get_auth_headers(client)
         payload = {"key": "dup.test", "language_code": "ru", "value": "Value 1"}
         await client.post("/api/v1/i18n/small/", json=payload, headers=headers)
-        
+
         response = await client.post("/api/v1/i18n/small/", json=payload, headers=headers)
         assert response.status_code == 409
