@@ -1,4 +1,6 @@
 """Shared pytest fixtures: in-memory SQLite database + async session + HTTPX test client."""
+# pylint: disable=redefined-outer-name
+
 from __future__ import annotations
 
 import asyncio
@@ -8,8 +10,11 @@ from typing import AsyncGenerator
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 import src.database
 
 # Pre-load ORM models and core components to avoid "Setup delay" during first test
@@ -19,8 +24,7 @@ import src.models.user  # noqa: F401
 import src.models.i18n  # noqa: F401
 import src.models.rbac  # noqa: F401
 import src.core.security
-from pwdlib import PasswordHash
-from pwdlib.hashers.argon2 import Argon2Hasher
+from src.utils.rate_limiter import limiter
 
 # --- Performance Optimizations ---
 
@@ -36,13 +40,13 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 # 3. Optimized SQLite Engine
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 test_engine = create_async_engine(
-    TEST_DATABASE_URL, 
+    TEST_DATABASE_URL,
     echo=False,
     connect_args={"check_same_thread": False},
 )
 
 @event.listens_for(test_engine.sync_engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
+def set_sqlite_pragma(dbapi_connection, _connection_record):
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA synchronous = OFF")
     cursor.execute("PRAGMA journal_mode = MEMORY")
@@ -84,15 +88,14 @@ def app():
     """Cached FastAPI app instance."""
     return create_app()
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture  # pylint: disable=redefined-outer-name
 async def client(app, db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Optimized and isolation-safe test client."""
-    from src.utils.rate_limiter import limiter
-    
-    # Disable rate limiting entirely so `20/second` strict default limits don't 
+
+    # Disable rate limiting entirely so `20/second` strict default limits don't
     # crush test suite latency and rapid-fire checks.
     limiter.enabled = False
-    
+
     # 1. Thread-safe session override for current task
     token = src.core.security.TEST_SESSION_OVERRIDE.set(db_session)
     app.dependency_overrides[get_db_session] = lambda: db_session
