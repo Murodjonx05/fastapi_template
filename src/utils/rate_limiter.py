@@ -1,4 +1,5 @@
 from typing import Final
+
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
@@ -10,6 +11,7 @@ from src.core.settings import app_settings
 ERROR_CODE: Final[int] = 429
 ERROR_MSG: Final[str] = "Rate limit exceeded. Please try again later."
 
+
 def resolve_key(request: Request) -> str:
     """Identify client for rate limiting purposes, respecting reverse proxy headers."""
     if app_settings.trust_proxy_headers:
@@ -19,17 +21,21 @@ def resolve_key(request: Request) -> str:
             return forwarded_for.split(",", 1)[0].strip()
     return request.client.host if request.client else get_remote_address(request)
 
-# --- Helpers ---
+
 def limit_minute(x: int) -> str:
     return f"{x}/minute"
+
 
 def limit_hour(x: int) -> str:
     return f"{x}/hour"
 
+
 def limit_day(x: int) -> str:
     return f"{x}/day"
 
+
 limiter = Limiter(key_func=resolve_key, default_limits=["20/second"])
+
 
 async def _rate_limit_exceeded_handler(request: Request, _: RateLimitExceeded) -> Response:
     """Generic handler for rate limit violations."""
@@ -38,6 +44,6 @@ async def _rate_limit_exceeded_handler(request: Request, _: RateLimitExceeded) -
         content={
             "detail": ERROR_MSG,
             "status": ERROR_CODE,
-            "type": "rate_limit_error"
-        }
+            "type": "rate_limit_error",
+        },
     )

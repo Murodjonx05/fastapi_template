@@ -10,12 +10,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DEFAULT_DB_PATH = (BASE_DIR / "data" / "database.db").resolve()
 
-
 MODEL_CONFIG = SettingsConfigDict(
     env_file=BASE_DIR / ".env",
     env_file_encoding="utf-8",
     extra="ignore",
 )
+
 
 @lru_cache(maxsize=1)
 def _get_dev_jwt_secret_key() -> str:
@@ -32,8 +32,7 @@ class AppSettings(BaseSettings):
         alias="DATABASE_URL",
     )
     run_migrations_on_startup: bool = Field(
-        default=False,
-        alias="RUN_MIGRATIONS_ON_STARTUP",
+        default=False, alias="RUN_MIGRATIONS_ON_STARTUP"
     )
     host: str = Field(default="127.0.0.1", alias="HOST")
     port: int = Field(default=8000, alias="PORT")
@@ -42,6 +41,7 @@ class AppSettings(BaseSettings):
     forwarded_allow_ips: str = Field(default="127.0.0.1", alias="FORWARDED_ALLOW_IPS")
     docs_enabled: bool | None = Field(default=None, alias="DOCS_ENABLED")
     jwt_secret_key: str | None = Field(default=None, alias="JWT_SECRET_KEY")
+
     model_config = MODEL_CONFIG
 
     @field_validator("database_url")
@@ -66,8 +66,7 @@ class AppSettings(BaseSettings):
     @property
     def sync_database_url(self) -> str:
         return (
-            self.database_url
-            .replace("sqlite+aiosqlite:///", "sqlite:///", 1)
+            self.database_url.replace("sqlite+aiosqlite:///", "sqlite:///", 1)
             .replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
         )
 
@@ -93,5 +92,6 @@ class AppSettings(BaseSettings):
         if self.docs_enabled is not None:
             return self.docs_enabled
         return self.debug_mode
+
 
 app_settings = AppSettings()

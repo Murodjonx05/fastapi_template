@@ -3,13 +3,9 @@ from typing import Annotated
 from fastapi import Depends, Query
 from pydantic import BaseModel, ConfigDict
 
-Pagination = Annotated[
-    int,
-    Query(ge=1, description="Page number", examples=[1]),
-]
+Pagination = Annotated[int, Query(ge=1, description="Page number", examples=[1])]
 PaginationCount = Annotated[
-    int,
-    Query(ge=1, le=100, description="Items per page", examples=[20]),
+    int, Query(ge=1, le=100, description="Items per page", examples=[20])
 ]
 
 
