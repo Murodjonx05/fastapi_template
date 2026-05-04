@@ -19,7 +19,7 @@ class User(BasePK):
     created_at: Mapped[timestamp]
     updated_at: Mapped[updated_timestamp]
 
-    role_id: Mapped[int | None] = mapped_column(ForeignKey("roles.id"), nullable=True)
+    role_id: Mapped[int | None] = mapped_column(ForeignKey("rbac.id"), nullable=True)
     role: Mapped[Role | None] = relationship("Role", foreign_keys=[role_id])
 
     permissions: Mapped[list[Permission]] = relationship(

@@ -103,7 +103,7 @@ def upgrade() -> None:
             unique=False,
         )
 
-    for table_name in ("permissions", "roles"):
+    for table_name in ("permissions", "rbac"):
         desired_order = (
             ("id", "name", "title_key", "description_key")
             if table_name == "permissions"
@@ -125,7 +125,7 @@ def downgrade() -> None:
     bind = op.get_bind()
     inspector = sa.inspect(bind)
 
-    for table_name in ("permissions", "roles"):
+    for table_name in ("permissions", "rbac"):
         desired_order = (
             ("id", "name", "title_key1", "title_key2", "description_key1", "description_key2")
             if table_name == "permissions"

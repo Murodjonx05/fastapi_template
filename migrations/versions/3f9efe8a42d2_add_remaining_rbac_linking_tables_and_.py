@@ -30,7 +30,7 @@ def upgrade() -> None:
         sa.Column('role_id', sa.Integer(), nullable=False),
         sa.Column('permission_id', sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(['permission_id'], ['permissions.id'], name=op.f('fk_role_permissions_permission_id')),
-        sa.ForeignKeyConstraint(['role_id'], ['roles.id'], name=op.f('fk_role_permissions_role_id')),
+        sa.ForeignKeyConstraint(['role_id'], ['rbac.id'], name=op.f('fk_role_permissions_role_id')),
         sa.PrimaryKeyConstraint('role_id', 'permission_id', name=op.f('pk_role_permissions'))
         )
     if 'user_permissions' not in existing_tables:
@@ -49,12 +49,12 @@ def upgrade() -> None:
         batch_op.drop_column('title_key')
         batch_op.drop_column('description_key')
 
-    with op.batch_alter_table('roles', schema=None) as batch_op:
+    with op.batch_alter_table('rbac', schema=None) as batch_op:
         batch_op.add_column(sa.Column('title_id', sa.Integer(), nullable=False))
         batch_op.add_column(sa.Column('description_id', sa.Integer(), nullable=False))
-        batch_op.drop_constraint(batch_op.f('fk_roles_permissions_id'), type_='foreignkey')
-        batch_op.create_foreign_key(batch_op.f('fk_roles_description_id'), 'translations_small', ['description_id'], ['id'])
-        batch_op.create_foreign_key(batch_op.f('fk_roles_title_id'), 'translations_small', ['title_id'], ['id'])
+        batch_op.drop_constraint(batch_op.f('fk_rbac_permissions_id'), type_='foreignkey')
+        batch_op.create_foreign_key(batch_op.f('fk_rbac_description_id'), 'translations_small', ['description_id'], ['id'])
+        batch_op.create_foreign_key(batch_op.f('fk_rbac_title_id'), 'translations_small', ['title_id'], ['id'])
         batch_op.drop_column('permissions_id')
         batch_op.drop_column('title_key')
         batch_op.drop_column('description_key')
@@ -83,7 +83,7 @@ def upgrade() -> None:
                type_=sa.String(length=255),
                existing_nullable=False)
         batch_op.create_index(batch_op.f('ix_users_uuid'), ['uuid'], unique=True)
-        batch_op.create_foreign_key(batch_op.f('fk_users_role_id'), 'roles', ['role_id'], ['id'])
+        batch_op.create_foreign_key(batch_op.f('fk_users_role_id'), 'rbac', ['role_id'], ['id'])
 
     # ### end Alembic commands ###
 
@@ -116,13 +116,13 @@ def downgrade() -> None:
         batch_op.drop_constraint('uq_translations_huge_key_language', type_='unique')
         batch_op.create_index(batch_op.f('ix_translations_huge_lookup'), ['key', 'language_code'], unique=False)
 
-    with op.batch_alter_table('roles', schema=None) as batch_op:
+    with op.batch_alter_table('rbac', schema=None) as batch_op:
         batch_op.add_column(sa.Column('description_key', sa.VARCHAR(length=128), nullable=False))
         batch_op.add_column(sa.Column('title_key', sa.VARCHAR(length=128), nullable=False))
         batch_op.add_column(sa.Column('permissions_id', sa.INTEGER(), nullable=False))
-        batch_op.drop_constraint(batch_op.f('fk_roles_title_id'), type_='foreignkey')
-        batch_op.drop_constraint(batch_op.f('fk_roles_description_id'), type_='foreignkey')
-        batch_op.create_foreign_key(batch_op.f('fk_roles_permissions_id'), 'permissions', ['permissions_id'], ['id'], ondelete='CASCADE')
+        batch_op.drop_constraint(batch_op.f('fk_rbac_title_id'), type_='foreignkey')
+        batch_op.drop_constraint(batch_op.f('fk_rbac_description_id'), type_='foreignkey')
+        batch_op.create_foreign_key(batch_op.f('fk_rbac_permissions_id'), 'permissions', ['permissions_id'], ['id'], ondelete='CASCADE')
         batch_op.drop_column('description_id')
         batch_op.drop_column('title_id')
 
