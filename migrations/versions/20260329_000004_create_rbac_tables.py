@@ -32,7 +32,7 @@ def upgrade() -> None:
     )
 
     op.create_table(
-        "roles",
+        "rbac",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(length=255), nullable=False),
         sa.Column("title_key1", sa.String(length=128), nullable=False),
@@ -47,5 +47,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("roles")
+    op.drop_table("rbac")
     op.drop_table("permissions")
