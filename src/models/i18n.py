@@ -1,4 +1,4 @@
-from typing import Type, Annotated
+from typing import Annotated
 
 from sqlalchemy import String, Text, UniqueConstraint, ForeignKey
 from sqlalchemy.orm import (
@@ -27,7 +27,9 @@ class TranslationMixin:
 class TranslationSmall(BasePK, TranslationMixin):
     __tablename__ = "translations_small"
     __table_args__ = (
-        UniqueConstraint("key", "language_code", name="uq_translations_small_key_language"),
+        UniqueConstraint(
+            "key", "language_code", name="uq_translations_small_key_language"
+        ),
     )
     values: Mapped[str] = mapped_column(String(SMALL_CHARS))
 
@@ -35,7 +37,9 @@ class TranslationSmall(BasePK, TranslationMixin):
 class TranslationMedium(BasePK, TranslationMixin):
     __tablename__ = "translations_medium"
     __table_args__ = (
-        UniqueConstraint("key", "language_code", name="uq_translations_medium_key_language"),
+        UniqueConstraint(
+            "key", "language_code", name="uq_translations_medium_key_language"
+        ),
     )
     values: Mapped[str] = mapped_column(Text)
 
@@ -43,7 +47,9 @@ class TranslationMedium(BasePK, TranslationMixin):
 class TranslationLarge(BasePK, TranslationMixin):
     __tablename__ = "translations_large"
     __table_args__ = (
-        UniqueConstraint("key", "language_code", name="uq_translations_large_key_language"),
+        UniqueConstraint(
+            "key", "language_code", name="uq_translations_large_key_language"
+        ),
     )
     values: Mapped[str] = mapped_column(Text)
 
@@ -51,7 +57,9 @@ class TranslationLarge(BasePK, TranslationMixin):
 class TranslationHuge(BasePK, TranslationMixin):
     __tablename__ = "translations_huge"
     __table_args__ = (
-        UniqueConstraint("key", "language_code", name="uq_translations_huge_key_language"),
+        UniqueConstraint(
+            "key", "language_code", name="uq_translations_huge_key_language"
+        ),
     )
     values: Mapped[str] = mapped_column(Text)
 

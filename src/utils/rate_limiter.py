@@ -37,7 +37,9 @@ def limit_day(x: int) -> str:
 limiter = Limiter(key_func=resolve_key, default_limits=["20/second"])
 
 
-async def _rate_limit_exceeded_handler(request: Request, _: RateLimitExceeded) -> Response:
+async def _rate_limit_exceeded_handler(
+    request: Request, _: RateLimitExceeded
+) -> Response:
     """Generic handler for rate limit violations."""
     return JSONResponse(
         status_code=ERROR_CODE,

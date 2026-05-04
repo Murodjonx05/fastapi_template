@@ -40,7 +40,11 @@ async def create_translation(
     try:
         return await _CRUD_MAP[size].create(
             session,
-            {"key": data.key, "language_code": data.language_code, "values": data.value},
+            {
+                "key": data.key,
+                "language_code": data.language_code,
+                "values": data.value,
+            },
         )
     except IntegrityError as exc:
         raise TranslationAlreadyExistsError(data.key, data.language_code) from exc
@@ -49,7 +53,9 @@ async def create_translation(
 async def get_translation(
     key: str, lang: str, size: TranslationSize, session: AsyncSession
 ):
-    if not (obj := await _CRUD_MAP[size].get_by_field(session, key=key, language_code=lang)):
+    if not (
+        obj := await _CRUD_MAP[size].get_by_field(session, key=key, language_code=lang)
+    ):
         raise TranslationNotFoundError(key, lang)
     return obj
 

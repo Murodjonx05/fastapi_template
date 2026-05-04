@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient
 from src.utils.rate_limiter import limiter
 
+
 @pytest.mark.asyncio
 async def test_debug_limiter(client: AsyncClient):
     limiter.enabled = True

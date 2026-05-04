@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import datetime
 from pathlib import Path
-from typing import Annotated, AsyncGenerator
+from typing import Annotated, AsyncGenerator, TYPE_CHECKING
 
 from fastapi import Depends
-from sqlalchemy import DateTime, MetaData, String, func
+from sqlalchemy import DateTime, MetaData, String, func, ForeignKey
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from src.core.settings import app_settings
+
+if TYPE_CHECKING:
+    from src.models.user import User
 
 # --- Engine & Session ---
 engine = create_async_engine(app_settings.database_url, echo=False)
@@ -83,3 +86,30 @@ class BasePK(Base):
     __abstract__ = True
 
     id: Mapped[int_pk]
+
+
+class AuditLog(BasePK):
+    """Audit log for tracking security-relevant actions."""
+
+    __tablename__ = "audit_logs"
+
+    action: Mapped[str] = mapped_column(
+        String(64)
+    )  # e.g., "user_created", "login", "delete"
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    target_type: Mapped[str | None] = mapped_column(
+        String(32), nullable=True
+    )  # e.g., "user", "role", "permission"
+    target_id: Mapped[int | None] = mapped_column(nullable=True)
+    details: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    ip_address: Mapped[str | None] = mapped_column(
+        String(45), nullable=True
+    )  # IPv6 max length
+    user_agent: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    created_at: Mapped[timestamp] = mapped_column(
+        DateTime(timezone=True), server_default=now_utc, default=_now_py
+    )
+
+    user: Mapped["User | None"] = relationship("User", lazy="selectin")

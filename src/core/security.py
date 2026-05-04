@@ -2,13 +2,16 @@ import contextvars
 from typing import Annotated
 
 from authx import AuthX, AuthXConfig
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pwdlib import PasswordHash
 from pwdlib.exceptions import HasherNotAvailable
 from pydantic import SecretStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+import secrets
+import time
 
 from src.core.settings import app_settings
 from src.database import AsyncSessionMaker
@@ -47,14 +50,74 @@ async def verify_and_update_password(
 config = AuthXConfig(
     JWT_SECRET_KEY=app_settings.effective_jwt_secret_key,
     JWT_TOKEN_LOCATION=["headers"],
+    JWT_ACCESS_TOKEN_EXPIRES=86400,  # 24 hours in seconds
 )
 
 auth = AuthX(config=config, model=User)
 
+# Bearer token scheme for OpenAPI documentation (shows lock icons)
+bearer_scheme = HTTPBearer(
+    bearerFormat="JWT",
+    scheme_name="BearerToken",
+    description="JWT Authentication token - required for protected endpoints",
+)
+
 # --- AuthX Subject Retrieval ---
+# Refresh token store (in production, use Redis or database)
+_REFRESH_TOKENS: dict[str, dict] = {}
+
+
+def _generate_refresh_token() -> str:
+    """Generate a secure random refresh token."""
+    return secrets.token_urlsafe(64)
+
+
+def _create_refresh_token_data(user_uuid: str) -> dict:
+    """Create refresh token metadata."""
+    return {
+        "user_uuid": user_uuid,
+        "created_at": time.time(),
+        "expires_at": time.time() + 7 * 24 * 3600,  # 7 days
+    }
+
+
+async def create_refresh_token(user_uuid: str) -> str:
+    """Create and store a refresh token for a user."""
+    token = _generate_refresh_token()
+    _REFRESH_TOKENS[token] = _create_refresh_token_data(user_uuid)
+    return token
+
+
+async def validate_refresh_token(token: str) -> str | None:
+    """Validate a refresh token and return the user UUID."""
+    data = _REFRESH_TOKENS.get(token)
+    if not data:
+        return None
+    if time.time() > data["expires_at"]:
+        del _REFRESH_TOKENS[token]
+        return None
+    return data["user_uuid"]
+
+
+async def revoke_refresh_token(token: str) -> None:
+    """Revoke a refresh token."""
+    _REFRESH_TOKENS.pop(token, None)
+
+
+async def revoke_all_user_tokens(user_uuid: str) -> None:
+    """Revoke all refresh tokens for a user."""
+    tokens_to_remove = [
+        token
+        for token, data in _REFRESH_TOKENS.items()
+        if data["user_uuid"] == user_uuid
+    ]
+    for token in tokens_to_remove:
+        del _REFRESH_TOKENS[token]
+
+
 # Use ContextVar for thread/coroutine safe session overrides in tests.
-TEST_SESSION_OVERRIDE: contextvars.ContextVar[AsyncSession | None] = contextvars.ContextVar(
-    "test_session", default=None
+TEST_SESSION_OVERRIDE: contextvars.ContextVar[AsyncSession | None] = (
+    contextvars.ContextVar("test_session", default=None)
 )
 
 
@@ -76,8 +139,14 @@ auth.set_subject_getter(_get_user_by_uuid)
 
 
 # --- Dependencies ---
-async def get_current_user(request: Request) -> User:
-    """FastAPI dependency to get the current authenticated user."""
+async def get_current_user(
+    request: Request,
+    _: HTTPAuthorizationCredentials = Security(bearer_scheme),
+) -> User:
+    """FastAPI dependency to get the current authenticated user.
+
+    Shows lock icon in OpenAPI docs for protected endpoints.
+    """
     user = await auth.get_current_subject(request)
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -94,8 +163,11 @@ class RoleChecker:
         self.allowed_rbac = allowed_rbac
 
     async def __call__(self, user: CurrentUser) -> User:
-        # In a full RBAC system, we'd check user.role.name against allowed_rbac.
-        # For now, authentication is enforced via CurrentUser dependency.
+        if not user.role or user.role.name not in self.allowed_rbac:
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions. Admin role required.",
+            )
         return user
 
 

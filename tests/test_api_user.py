@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+
 @pytest.mark.asyncio
 class TestUserAPI:
     """Integration tests for User API endpoints."""
@@ -9,7 +10,7 @@ class TestUserAPI:
         payload = {
             "username": "new_user_123",
             "password": "StrongPassword123!",
-            "password_confirm": "StrongPassword123!"
+            "password_confirm": "StrongPassword123!",
         }
         response = await client.post("/api/v1/users/", json=payload)
         assert response.status_code == 201
@@ -19,7 +20,7 @@ class TestUserAPI:
         payload = {
             "username": "duplicate_user",
             "password": "Password123!",
-            "password_confirm": "Password123!"
+            "password_confirm": "Password123!",
         }
         # First signup
         await client.post("/api/v1/users/", json=payload)
@@ -32,17 +33,19 @@ class TestUserAPI:
         # 1. Signup
         username = "test_auth_user"
         password = "SecurePassword123!"
-        await client.post("/api/v1/users/", json={
-            "username": username,
-            "password": password,
-            "password_confirm": password
-        })
+        await client.post(
+            "/api/v1/users/",
+            json={
+                "username": username,
+                "password": password,
+                "password_confirm": password,
+            },
+        )
 
         # 2. Auth (Login)
-        auth_response = await client.post("/api/v1/users/auth", json={
-            "username": username,
-            "password": password
-        })
+        auth_response = await client.post(
+            "/api/v1/users/auth", json={"username": username, "password": password}
+        )
         assert auth_response.status_code == 200
         token = auth_response.json()["access_token"]
         assert token

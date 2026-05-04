@@ -1,4 +1,5 @@
 """Unit tests for User schemas validation."""
+
 from __future__ import annotations
 
 import pytest
@@ -9,7 +10,9 @@ from src.schemas.user import UserAuthSchema, UserCreateSchema, UserResponseSchem
 
 class TestUserAuthSchema:
     def test_valid_auth(self):
-        schema = UserAuthSchema(username="john_doe", password=SecretStr("StrongPass123!"))
+        schema = UserAuthSchema(
+            username="john_doe", password=SecretStr("StrongPass123!")
+        )
         assert schema.username == "john_doe"
         assert schema.password.get_secret_value() == "StrongPass123!"
 
@@ -30,7 +33,9 @@ class TestUserAuthSchema:
             UserAuthSchema(username="john_doe", password=SecretStr("short"))
 
     def test_username_strips_whitespace(self):
-        schema = UserAuthSchema(username="  john_doe  ", password=SecretStr("StrongPass123!"))
+        schema = UserAuthSchema(
+            username="  john_doe  ", password=SecretStr("StrongPass123!")
+        )
         assert schema.username == "john_doe"
 
 

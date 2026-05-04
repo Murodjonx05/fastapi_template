@@ -21,9 +21,7 @@ class CRUDBase(Generic[T]):
     async def list(
         self, session: AsyncSession, offset: int = 0, limit: int = 20
     ) -> Sequence[T]:
-        result = await session.execute(
-            select(self.model).offset(offset).limit(limit)
-        )
+        result = await session.execute(select(self.model).offset(offset).limit(limit))
         return result.scalars().all()
 
     async def create(self, session: AsyncSession, data: dict[str, Any]) -> T:
@@ -33,7 +31,5 @@ class CRUDBase(Generic[T]):
         return obj
 
     async def delete(self, session: AsyncSession, id_: Any) -> bool:
-        result = await session.execute(
-            delete(self.model).where(self.model.id == id_)
-        )
+        result = await session.execute(delete(self.model).where(self.model.id == id_))
         return result.rowcount > 0

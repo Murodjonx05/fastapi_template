@@ -11,15 +11,23 @@ if TYPE_CHECKING:
 role_permissions = Table(
     "role_permissions",
     BasePK.metadata,
-    Column("role_id", ForeignKey("rbac.id"), primary_key=True),
-    Column("permission_id", ForeignKey("permissions.id"), primary_key=True),
+    Column("role_id", ForeignKey("rbac.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "permission_id",
+        ForeignKey("permissions.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
 )
 
 user_permissions = Table(
     "user_permissions",
     BasePK.metadata,
-    Column("user_id", ForeignKey("users.id"), primary_key=True),
-    Column("permission_id", ForeignKey("permissions.id"), primary_key=True),
+    Column("user_id", ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "permission_id",
+        ForeignKey("permissions.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
 )
 
 
@@ -31,13 +39,14 @@ class Permission(BasePK, TranslationSmallMixin):
         "User",
         secondary="user_permissions",
         back_populates="permissions",
+        viewonly=True,
     )
 
 
 class Role(BasePK, TranslationSmallMixin):
     __tablename__ = "rbac"
     name: Mapped[str] = mapped_column(unique=True)
-    permissions: Mapped[list["Permission"]] = relationship(
+    permissions: Mapped[list[Permission]] = relationship(
         secondary=role_permissions, back_populates="roles"
     )
     users: Mapped[list["User"]] = relationship(back_populates="role")

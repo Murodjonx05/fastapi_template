@@ -33,9 +33,7 @@ def setup_exception_handlers(app: FastAPI) -> None:
     async def domain_exception_handler(request: Request, exc: DomainError):
         """Handle domain-specific exceptions polymorphically."""
         if exc.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
-            logger.error(
-                f"Unhandled domain exception: {type(exc).__name__}: {exc}"
-            )
+            logger.error(f"Unhandled domain exception: {type(exc).__name__}: {exc}")
 
         return JSONResponse(
             status_code=exc.status_code,
@@ -52,13 +50,4 @@ def setup_exception_handlers(app: FastAPI) -> None:
                 "detail": "An unexpected server error occurred.",
                 "type": "InternalServerError",
             },
-        )
-
-    @app.exception_handler(Exception)
-    async def global_exception_handler(request: Request, exc: Exception):
-        """Fallback handler for any unhandled exceptions."""
-        logger.exception(f"Unhandled system error: {exc}")
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "An unexpected server error occurred.", "type": "InternalServerError"}
         )

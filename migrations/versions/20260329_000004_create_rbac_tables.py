@@ -40,7 +40,9 @@ def upgrade() -> None:
         sa.Column("description_key1", sa.String(length=128), nullable=False),
         sa.Column("description_key2", sa.String(length=128), nullable=False),
         sa.Column("permissions_id", sa.Integer(), nullable=False),
-        sa.ForeignKeyConstraint(["permissions_id"], ["permissions.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["permissions_id"], ["permissions.id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name"),
     )

@@ -1,6 +1,6 @@
 from typing import Annotated, Self
+import re
 
-from fastapi import Depends
 from pydantic import Field, SecretStr, StringConstraints, model_validator
 
 from src.schemas.base import BaseSchema
@@ -17,7 +17,7 @@ Password = Annotated[
     Field(
         min_length=8,
         max_length=128,
-        description="Password must be at least 8 characters long and less than 128 characters",
+        description="Password must contain uppercase, lowercase, number, and special character",
         examples=["StrongPass123!"],
     ),
 ]
@@ -37,6 +37,22 @@ class UserCreateSchema(UserAuthSchema):
             raise ValueError("Passwords do not match")
         return self
 
+    @model_validator(mode="after")
+    def validate_password_complexity(self) -> Self:
+        """Validate password meets complexity requirements."""
+        pw = self.password.get_secret_value()
+        if not re.search(r"[a-z]", pw):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not re.search(r"[A-Z]", pw):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not re.search(r"\d", pw):
+            raise ValueError("Password must contain at least one number")
+        if not re.search(r"[@$!%*?&]", pw):
+            raise ValueError(
+                "Password must contain at least one special character (@$!%*?&)"
+            )
+        return self
+
 
 class UserResponseSchema(BaseSchema):
     uuid: str
@@ -46,3 +62,5 @@ class UserResponseSchema(BaseSchema):
 class UserTokenSchema(BaseSchema):
     access_token: str
     token_type: str = "Bearer"
+    expires_in: int = 86400
+    refresh_token: str | None = None  # 24 hours in seconds

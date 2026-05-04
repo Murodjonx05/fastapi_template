@@ -10,12 +10,15 @@ from src.utils.logging import get_logger
 
 logger = get_logger("lifespan")
 
+
 def apply_migrations() -> None:
     """Run Alembic migrations to upgrade the schema to head."""
     ensure_database_directory()
     alembic_ini_path = BASE_DIR / "alembic.ini"
     if not alembic_ini_path.exists():
-        logger.warning(f"Alembic configuration not found at {alembic_ini_path}. Skipping migrations.")
+        logger.warning(
+            f"Alembic configuration not found at {alembic_ini_path}. Skipping migrations."
+        )
         return
     logger.info("Initializing database migrations...")
     try:
@@ -26,6 +29,7 @@ def apply_migrations() -> None:
     except Exception as exc:
         logger.error(f"Migration error: {exc}", exc_info=True)
         raise
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):

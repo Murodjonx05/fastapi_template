@@ -30,7 +30,9 @@ class InterceptHandler(logging.Handler):
             level = logger.level(record.levelname).name
         except ValueError:
             level = record.levelno
-        logger.bind(module=record.name).opt(exception=record.exc_info).log(level, record.getMessage())
+        logger.bind(module=record.name).opt(exception=record.exc_info).log(
+            level, record.getMessage()
+        )
 
 
 def _format(record):
@@ -48,6 +50,7 @@ def _format(record):
 
 def color(text: object, tc: str | None = None, bc: str | None = None) -> str:
     from html import escape
+
     content = escape(str(text))
     if bc:
         content = f" {content} "

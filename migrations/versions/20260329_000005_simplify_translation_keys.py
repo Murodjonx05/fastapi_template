@@ -127,7 +127,14 @@ def downgrade() -> None:
 
     for table_name in ("permissions", "rbac"):
         desired_order = (
-            ("id", "name", "title_key1", "title_key2", "description_key1", "description_key2")
+            (
+                "id",
+                "name",
+                "title_key1",
+                "title_key2",
+                "description_key1",
+                "description_key2",
+            )
             if table_name == "permissions"
             else (
                 "id",

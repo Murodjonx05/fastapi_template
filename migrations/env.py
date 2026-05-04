@@ -10,11 +10,13 @@ from src.core.settings import app_settings
 from src.database import Base, ensure_database_directory
 from src.utils.logging import configure_logging, get_logger
 
+
 # Best Practice: Dynamically discover and load all modules in src.models
 # to ensure Base.metadata is fully populated for autogenerate.
 def discover_models():
     for _, name, _ in pkgutil.iter_modules(src.models.__path__, "src.models."):
         importlib.import_module(name)
+
 
 discover_models()
 
@@ -29,7 +31,9 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
-    alembic_logger.info("Running migrations in offline mode", extra={"module": "alembic"})
+    alembic_logger.info(
+        "Running migrations in offline mode", extra={"module": "alembic"}
+    )
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -45,7 +49,9 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     ensure_database_directory()
-    alembic_logger.info("Running migrations in online mode", extra={"module": "alembic"})
+    alembic_logger.info(
+        "Running migrations in online mode", extra={"module": "alembic"}
+    )
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

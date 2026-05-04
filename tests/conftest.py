@@ -29,9 +29,9 @@ from src.utils.rate_limiter import limiter
 # --- Performance Optimizations ---
 
 # 1. Fast Hashing for Tests
-src.core.security.PASSWORD_HASHER = PasswordHash((
-    Argon2Hasher(time_cost=1, memory_cost=512, parallelism=1),
-))
+src.core.security.PASSWORD_HASHER = PasswordHash(
+    (Argon2Hasher(time_cost=1, memory_cost=512, parallelism=1),)
+)
 
 # 2. Silent Logs for maximum throughput
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
@@ -45,12 +45,14 @@ test_engine = create_async_engine(
     connect_args={"check_same_thread": False},
 )
 
+
 @event.listens_for(test_engine.sync_engine, "connect")
 def set_sqlite_pragma(dbapi_connection, _connection_record):
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA synchronous = OFF")
     cursor.execute("PRAGMA journal_mode = MEMORY")
     cursor.close()
+
 
 TestSessionLocal = async_sessionmaker(bind=test_engine, expire_on_commit=False)
 
@@ -60,11 +62,13 @@ src.database.engine = test_engine
 
 # --- Fixtures ---
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_database():
@@ -75,6 +79,7 @@ async def setup_database():
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
+
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Function-scoped transactional session."""
@@ -83,10 +88,12 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
             yield session
             await session.rollback()
 
+
 @pytest.fixture(scope="session")
 def app():
     """Cached FastAPI app instance."""
     return create_app()
+
 
 @pytest_asyncio.fixture  # pylint: disable=redefined-outer-name
 async def client(app, db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:

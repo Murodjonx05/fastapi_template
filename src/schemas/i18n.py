@@ -4,7 +4,12 @@ from typing import Annotated
 from pydantic import AliasChoices, Field, StringConstraints
 
 from src.core.constants import HUGE_KB, LARGE_KB, MEDIUM_CHARS, SMALL_CHARS
-from src.core.exceptions import AlreadyExistsError, DomainError, NotFoundError, ValidationError
+from src.core.exceptions import (
+    AlreadyExistsError,
+    DomainError,
+    NotFoundError,
+    ValidationError,
+)
 from src.schemas.base import BaseSchema
 
 TranslationKey = Annotated[
@@ -13,7 +18,9 @@ TranslationKey = Annotated[
 LanguageCode = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=2, max_length=16)
 ]
-TranslationValue = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+TranslationValue = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1)
+]
 
 
 class TranslationSize(StrEnum):
@@ -45,17 +52,23 @@ class TranslationValidationError(ValidationError):
 
 class TranslationAlreadyExistsError(AlreadyExistsError):
     def __init__(self, key: str, language_code: str) -> None:
-        super().__init__(f"Translation '{key}' for language '{language_code}' already exists")
+        super().__init__(
+            f"Translation '{key}' for language '{language_code}' already exists"
+        )
 
 
 class TranslationNotFoundError(NotFoundError):
     def __init__(self, key: str, language_code: str) -> None:
-        super().__init__(f"Translation '{key}' for language '{language_code}' not found")
+        super().__init__(
+            f"Translation '{key}' for language '{language_code}' not found"
+        )
 
 
 class TranslationDeleteNotFoundError(NotFoundError):
     def __init__(self, id_: int, size: TranslationSize) -> None:
-        super().__init__(f"Translation with id '{id_}' and size '{size.value}' to delete not found")
+        super().__init__(
+            f"Translation with id '{id_}' and size '{size.value}' to delete not found"
+        )
 
 
 def validate_translation_value(value: str, size: TranslationSize) -> str:

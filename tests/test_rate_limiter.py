@@ -3,6 +3,7 @@ from httpx import AsyncClient
 
 from src.utils.rate_limiter import limiter
 
+
 @pytest.mark.asyncio
 class TestRateLimiter:
     """Tests for the rate limiting logic and its integration with FastAPI."""

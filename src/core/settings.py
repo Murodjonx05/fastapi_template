@@ -32,7 +32,7 @@ class AppSettings(BaseSettings):
         alias="DATABASE_URL",
     )
     run_migrations_on_startup: bool = Field(
-        default=False, alias="RUN_MIGRATIONS_ON_STARTUP"
+        default=True, alias="RUN_MIGRATIONS_ON_STARTUP"
     )
     host: str = Field(default="127.0.0.1", alias="HOST")
     port: int = Field(default=8000, alias="PORT")
@@ -47,7 +47,9 @@ class AppSettings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def validate_database_url(cls, value: str, info: ValidationInfo) -> str:
-        if not value.startswith(("postgresql://", "postgresql+asyncpg://", "postgresql+psycopg://")):
+        if not value.startswith(
+            ("postgresql://", "postgresql+asyncpg://", "postgresql+psycopg://")
+        ):
             return value
 
         if not info.data.get("db_require_tls", False):
@@ -65,18 +67,24 @@ class AppSettings(BaseSettings):
 
     @property
     def sync_database_url(self) -> str:
-        return (
-            self.database_url.replace("sqlite+aiosqlite:///", "sqlite:///", 1)
-            .replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
-        )
+        return self.database_url.replace(
+            "sqlite+aiosqlite:///", "sqlite:///", 1
+        ).replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
 
     @field_validator("jwt_secret_key")
     @classmethod
     def validate_jwt_secret_key(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        if len(value) < 32 or value.lower() in {"change-me", "your-secret-key", "secret", "password"}:
-            raise ValueError("JWT_SECRET_KEY must be set to a strong random value with at least 32 characters")
+        if len(value) < 32 or value.lower() in {
+            "change-me",
+            "your-secret-key",
+            "secret",
+            "password",
+        }:
+            raise ValueError(
+                "JWT_SECRET_KEY must be set to a strong random value with at least 32 characters"
+            )
         return value
 
     @property

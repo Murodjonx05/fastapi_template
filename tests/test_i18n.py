@@ -1,4 +1,5 @@
 """Unit tests for i18n CRUD operations and schema validation."""
+
 from __future__ import annotations
 
 import pytest
@@ -54,7 +55,9 @@ class TestTranslationCreateSchema:
     """Tests for Pydantic-level validation on TranslationCreateSchema."""
 
     def test_valid_schema(self):
-        schema = TranslationCreateSchema(key="home.title", language_code="en", value="Welcome")
+        schema = TranslationCreateSchema(
+            key="home.title", language_code="en", value="Welcome"
+        )
         assert schema.key == "home.title"
 
     def test_key_too_long(self):
@@ -78,7 +81,9 @@ class TestTranslationCreateSchema:
 @pytest.mark.asyncio
 class TestCreateTranslation:
     async def test_create_and_read_back(self, db_session: AsyncSession):
-        schema = TranslationCreateSchema(key="greeting", language_code="en", value="Hello")
+        schema = TranslationCreateSchema(
+            key="greeting", language_code="en", value="Hello"
+        )
         created = await create_translation(schema, TranslationSize.SMALL, db_session)
 
         assert created.key == "greeting"
@@ -86,7 +91,9 @@ class TestCreateTranslation:
         assert created.values == "Hello"
 
     async def test_duplicate_raises(self, db_session: AsyncSession):
-        schema = TranslationCreateSchema(key="dup_test", language_code="en", value="First")
+        schema = TranslationCreateSchema(
+            key="dup_test", language_code="en", value="First"
+        )
         await create_translation(schema, TranslationSize.SMALL, db_session)
 
         with pytest.raises(TranslationAlreadyExistsError, match="already exists"):
@@ -95,7 +102,9 @@ class TestCreateTranslation:
     async def test_value_too_long_raises(self, db_session: AsyncSession):
         limit = MAX_VALUE_CHARS[TranslationSize.SMALL]
         long_value = "x" * (limit + 1)
-        schema = TranslationCreateSchema(key="long", language_code="en", value=long_value)
+        schema = TranslationCreateSchema(
+            key="long", language_code="en", value=long_value
+        )
 
         with pytest.raises(TranslationValidationError, match="exceeds maximum length"):
             await create_translation(schema, TranslationSize.SMALL, db_session)
@@ -104,15 +113,21 @@ class TestCreateTranslation:
 @pytest.mark.asyncio
 class TestGetTranslation:
     async def test_get_existing(self, db_session: AsyncSession):
-        schema = TranslationCreateSchema(key="get_test", language_code="ru", value="Привет")
+        schema = TranslationCreateSchema(
+            key="get_test", language_code="ru", value="Привет"
+        )
         await create_translation(schema, TranslationSize.SMALL, db_session)
 
-        result = await get_translation("get_test", "ru", TranslationSize.SMALL, db_session)
+        result = await get_translation(
+            "get_test", "ru", TranslationSize.SMALL, db_session
+        )
         assert result.values == "Привет"
 
     async def test_get_nonexistent_raises(self, db_session: AsyncSession):
         with pytest.raises(TranslationNotFoundError, match="not found"):
-            await get_translation("nonexistent", "zz", TranslationSize.SMALL, db_session)
+            await get_translation(
+                "nonexistent", "zz", TranslationSize.SMALL, db_session
+            )
 
 
 @pytest.mark.asyncio
@@ -125,17 +140,23 @@ class TestGetTranslations:
             )
             await create_translation(schema, TranslationSize.MEDIUM, db_session)
 
-        page1 = await get_translations(TranslationSize.MEDIUM, db_session, page=1, count=3)
+        page1 = await get_translations(
+            TranslationSize.MEDIUM, db_session, page=1, count=3
+        )
         assert len(page1) == 3
 
-        page2 = await get_translations(TranslationSize.MEDIUM, db_session, page=2, count=3)
+        page2 = await get_translations(
+            TranslationSize.MEDIUM, db_session, page=2, count=3
+        )
         assert len(page2) == 2
 
 
 @pytest.mark.asyncio
 class TestDeleteTranslation:
     async def test_delete_existing(self, db_session: AsyncSession):
-        schema = TranslationCreateSchema(key="del_test", language_code="en", value="temp")
+        schema = TranslationCreateSchema(
+            key="del_test", language_code="en", value="temp"
+        )
         created = await create_translation(schema, TranslationSize.SMALL, db_session)
 
         # Should not raise
